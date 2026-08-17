@@ -28,63 +28,11 @@ function verifyPassword(password, stored) {
   return timingSafeEqual(actual, expected);
 }
 
-// ─── Seed data (mirrors the original static mock in the UI) ────────────────
+// ─── In-memory data ─────────────────────────────────────────────────────────
 
-const now = Date.now();
+const users = new Map();
 
-const users = new Map(
-  [
-    { id: "u1", name: "Mira K.", hp: 7, isWorking: true, updatedAt: new Date(now - 1000 * 60 * 90) },
-    { id: "u2", name: "Dayo O.", hp: 4, isWorking: true, updatedAt: new Date(now - 1000 * 60 * 75) },
-    { id: "u3", name: "Noa L.", hp: 9, isWorking: false, updatedAt: new Date(now - 1000 * 60 * 60) },
-    { id: "u4", name: "Tariq M.", hp: 6, isWorking: true, updatedAt: new Date(now - 1000 * 60 * 45) },
-    { id: "u5", name: "Yuki S.", hp: 2, isWorking: true, updatedAt: new Date(now - 1000 * 60 * 30) },
-    { id: "u6", name: "Freya B.", hp: 8, isWorking: true, updatedAt: new Date(now - 1000 * 60 * 15) },
-  ].map((u) => [u.id, u])
-);
-
-let board = [
-  {
-    id: "b1",
-    type: "tired",
-    text: "Back-to-back meetings with no bathroom break.",
-    time: new Date(now - 1000 * 60 * 58),
-    submitterId: "u5",
-    claimedBy: [],
-  },
-  {
-    id: "b2",
-    type: "potion",
-    text: "You are doing better than you think. Keep going — the afternoon is almost over.",
-    time: new Date(now - 1000 * 60 * 42),
-    submitterId: "u1",
-    claimedBy: ["u2"],
-  },
-  {
-    id: "b3",
-    type: "tired",
-    text: "Printer jammed three times. Lost 20 minutes of my life I will never get back.",
-    time: new Date(now - 1000 * 60 * 30),
-    submitterId: "u4",
-    claimedBy: [],
-  },
-  {
-    id: "b4",
-    type: "potion",
-    text: "Take a sip of water and stretch for 30 seconds. Your body will thank you.",
-    time: new Date(now - 1000 * 60 * 14),
-    submitterId: "u3",
-    claimedBy: [],
-  },
-  {
-    id: "b5",
-    type: "tired",
-    text: "Client just moved the deadline up by two days.",
-    time: new Date(now - 1000 * 60 * 6),
-    submitterId: "u2",
-    claimedBy: [],
-  },
-];
+const board = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
