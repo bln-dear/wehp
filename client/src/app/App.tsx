@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { FlaskConical } from "lucide-react";
-import { api, ApiRequestError, type ApiUser, type ApiBoardEntry } from "../api";
+import { FlaskConical, LogOut } from "lucide-react";
+import { api, ApiRequestError, getWsUrl, type ApiUser, type ApiBoardEntry } from "../api";
 
 const MONO = "JetBrains Mono, monospace";
 const SANS = "Archivo, sans-serif";
 const STORAGE_KEY = "wehp:userId";
-const POLL_INTERVAL_MS = 4000;
+// Safety net in case the WebSocket silently drops without firing onclose.
+const FALLBACK_POLL_INTERVAL_MS = 15000;
+const WS_RECONNECT_BASE_MS = 1000;
+const WS_RECONNECT_MAX_MS = 15000;
 
 function getHpColor(hp: number): string {
   if (hp <= 1) return "#ef4444";
@@ -277,8 +280,13 @@ export default function App() {
   const [board, setBoard] = useState<ApiBoardEntry[]>([]);
 
   const [nameInput, setNameInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [signInStep, setSignInStep] = useState<"name" | "password">("name");
+  const [accountStatus, setAccountStatus] = useState<"existing" | "new" | null>(null);
+  const [checkingName, setCheckingName] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
+  const nameCheckCacheRef = useRef<{ name: string; exists: boolean } | null>(null);
 
   const [potionInput, setPotionInput] = useState("");
   const [showDrainModal, setShowDrainModal] = useState(false);
@@ -296,6 +304,19 @@ export default function App() {
   function scrollBoard() {
     setTimeout(() => boardEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }
+
+  // Auto-scroll whenever a new entry lands on the board — whether it's our
+  // own submission, another user's action pushed over WebSocket, or the
+  // fallback poll picking one up. Skip the very first load so we don't jump
+  // to the bottom before the user has looked at anything.
+  const lastEntryIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const lastId = board.length > 0 ? board[board.length - 1].id : null;
+    if (lastEntryIdRef.current !== null && lastId !== lastEntryIdRef.current) {
+      scrollBoard();
+    }
+    lastEntryIdRef.current = lastId;
+  }, [board]);
 
   const refreshDashboard = useCallback(async (id: string) => {
     try {
@@ -315,7 +336,7 @@ export default function App() {
     }
   }, []);
 
-  // Restore session / poll for live updates
+  // Restore session, then keep in sync via a fallback poll
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
@@ -325,23 +346,101 @@ export default function App() {
       if (!cancelled) setRestoring(false);
     })();
 
-    const interval = setInterval(() => refreshDashboard(userId), POLL_INTERVAL_MS);
+    const interval = setInterval(() => refreshDashboard(userId), FALLBACK_POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
   }, [userId, refreshDashboard]);
 
+  // Realtime updates: the server pushes a ping over WebSocket whenever
+  // anyone's data changes, and we just refetch our own dashboard snapshot.
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    let reconnectAttempt = 0;
+    let reconnectTimer: number | undefined;
+    let socket: WebSocket | null = null;
+
+    function connect() {
+      if (cancelled) return;
+      socket = new WebSocket(getWsUrl());
+
+      socket.onopen = () => {
+        reconnectAttempt = 0;
+      };
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "update") refreshDashboard(userId);
+        } catch {
+          // ignore malformed message
+        }
+      };
+      socket.onclose = () => {
+        if (cancelled) return;
+        const delay = Math.min(WS_RECONNECT_MAX_MS, WS_RECONNECT_BASE_MS * 2 ** reconnectAttempt);
+        reconnectAttempt += 1;
+        reconnectTimer = window.setTimeout(connect, delay);
+      };
+      socket.onerror = () => socket?.close();
+    }
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      socket?.close();
+    };
+  }, [userId, refreshDashboard]);
+
+  // Looks up whether a name is registered, caching per name so repeated
+  // submit attempts for the same name don't re-hit the network.
+  async function checkNameExists(name: string): Promise<boolean | null> {
+    const key = name.toLowerCase();
+    if (nameCheckCacheRef.current?.name === key) return nameCheckCacheRef.current.exists;
+    try {
+      const { exists } = await api.checkAccountExists(name);
+      nameCheckCacheRef.current = { name: key, exists };
+      return exists;
+    } catch {
+      return null;
+    }
+  }
+
+  async function handleNameSubmit() {
+    const name = nameInput.trim();
+    if (!name || checkingName) return;
+    setCheckingName(true);
+    setSignInError(null);
+    const exists = await checkNameExists(name);
+    setAccountStatus(exists === true ? "existing" : exists === false ? "new" : null);
+    setSignInStep("password");
+    setCheckingName(false);
+  }
+
+  function handleBackToName() {
+    setSignInStep("name");
+    setAccountStatus(null);
+    setPasswordInput("");
+    setSignInError(null);
+  }
+
   async function handleSignIn() {
     const name = nameInput.trim();
-    if (!name || signingIn) return;
+    const password = passwordInput;
+    if (!name || !password || signingIn) return;
     setSigningIn(true);
     setSignInError(null);
     try {
-      const { userId: newId } = await api.signIn(name);
+      const { userId: newId } = await api.signIn(name, password);
       localStorage.setItem(STORAGE_KEY, newId);
       setUserId(newId);
       setNameInput("");
+      setPasswordInput("");
+      setSignInStep("name");
+      setAccountStatus(null);
       await refreshDashboard(newId);
     } catch (err) {
       setSignInError(err instanceof ApiRequestError ? err.message : "Couldn't sign in. Try again.");
@@ -359,7 +458,6 @@ export default function App() {
       setTiredInput("");
       setShowDrainModal(false);
       await refreshDashboard(userId);
-      scrollBoard();
     } catch (err) {
       setActionError(err instanceof ApiRequestError ? err.message : "Something went wrong.");
     }
@@ -383,7 +481,6 @@ export default function App() {
       await api.sendPotion(userId, potionInput.trim());
       setPotionInput("");
       await refreshDashboard(userId);
-      scrollBoard();
     } catch (err) {
       setActionError(err instanceof ApiRequestError ? err.message : "Something went wrong.");
     }
@@ -398,6 +495,14 @@ export default function App() {
     } catch {
       // ignore — button states already prevent most invalid claims
     }
+  }
+
+  function handleSignOut() {
+    localStorage.removeItem(STORAGE_KEY);
+    setUserId(null);
+    setMe(null);
+    setUsers([]);
+    setBoard([]);
   }
 
   // ── Restoring session ───────────────────────────────────────────────────────
@@ -443,39 +548,104 @@ export default function App() {
             </div>
 
             <div>
-              <label
-                className="block text-xs tracking-widest uppercase text-muted-foreground mb-3"
-                style={{ fontFamily: MONO }}
-              >
-                Your name
-              </label>
-              <input
-                className="w-full bg-card border border-border rounded px-4 py-3.5 text-foreground outline-none focus:border-foreground/25 transition-all placeholder:text-muted-foreground/40 mb-3 text-base"
-                style={{ fontFamily: SANS }}
-                placeholder="First name, last initial"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
-                autoFocus
-              />
-              {signInError && (
-                <p className="text-xs mb-3" style={{ fontFamily: MONO, color: "#ef4444" }}>
-                  {signInError}
-                </p>
+              {signInStep === "name" ? (
+                <>
+                  <label
+                    className="block text-xs tracking-widest uppercase text-muted-foreground mb-3"
+                    style={{ fontFamily: MONO }}
+                  >
+                    Your name
+                  </label>
+                  <input
+                    className="w-full bg-card border border-border rounded px-4 py-3.5 text-foreground outline-none focus:border-foreground/25 transition-all placeholder:text-muted-foreground/40 mb-3 text-base"
+                    style={{ fontFamily: SANS }}
+                    placeholder="First name, last initial"
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleNameSubmit()}
+                    autoFocus
+                  />
+                  {signInError && (
+                    <p className="text-xs mb-3" style={{ fontFamily: MONO, color: "#ef4444" }}>
+                      {signInError}
+                    </p>
+                  )}
+                  <button
+                    className="w-full py-3.5 rounded text-sm font-bold tracking-wide transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                    style={{
+                      fontFamily: SANS,
+                      backgroundColor: nameInput.trim() ? "#e2e2e8" : "rgba(255,255,255,0.04)",
+                      color: nameInput.trim() ? "#0c0c10" : "#66667a",
+                      border: nameInput.trim() ? "none" : "1px solid rgba(255,255,255,0.08)",
+                    }}
+                    onClick={handleNameSubmit}
+                    disabled={!nameInput.trim() || checkingName}
+                  >
+                    {checkingName ? "Checking…" : "Continue →"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors mb-4"
+                    style={{ fontFamily: MONO }}
+                    onClick={handleBackToName}
+                  >
+                    ← {nameInput}
+                  </button>
+                  <label
+                    className="block text-xs tracking-widest uppercase mb-1"
+                    style={{
+                      fontFamily: MONO,
+                      color: accountStatus === "new" ? "#22c55e" : "#e2e2e8",
+                    }}
+                  >
+                    {accountStatus === "new" ? "Create a password" : "Password"}
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {accountStatus === "existing"
+                      ? "Welcome back — enter your password to sign in."
+                      : accountStatus === "new"
+                        ? "No account found for this name — this will create a new one."
+                        : "Enter your password to continue."}
+                  </p>
+                  <input
+                    type="password"
+                    className="w-full bg-card border border-border rounded px-4 py-3.5 text-foreground outline-none focus:border-foreground/25 transition-all placeholder:text-muted-foreground/40 mb-3 text-base"
+                    style={{ fontFamily: SANS }}
+                    placeholder="At least 4 characters"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
+                    autoComplete={accountStatus === "new" ? "new-password" : "current-password"}
+                    autoFocus
+                  />
+                  {signInError && (
+                    <p className="text-xs mb-3" style={{ fontFamily: MONO, color: "#ef4444" }}>
+                      {signInError}
+                    </p>
+                  )}
+                  <button
+                    className="w-full py-3.5 rounded text-sm font-bold tracking-wide transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                    style={{
+                      fontFamily: SANS,
+                      backgroundColor: passwordInput ? "#e2e2e8" : "rgba(255,255,255,0.04)",
+                      color: passwordInput ? "#0c0c10" : "#66667a",
+                      border: passwordInput ? "none" : "1px solid rgba(255,255,255,0.08)",
+                    }}
+                    onClick={handleSignIn}
+                    disabled={!passwordInput || signingIn}
+                  >
+                    {signingIn
+                      ? accountStatus === "new"
+                        ? "Creating…"
+                        : "Signing in…"
+                      : accountStatus === "new"
+                        ? "Create Account →"
+                        : "Sign In →"}
+                  </button>
+                </>
               )}
-              <button
-                className="w-full py-3.5 rounded text-sm font-bold tracking-wide transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                style={{
-                  fontFamily: SANS,
-                  backgroundColor: nameInput.trim() ? "#e2e2e8" : "rgba(255,255,255,0.04)",
-                  color: nameInput.trim() ? "#0c0c10" : "#66667a",
-                  border: nameInput.trim() ? "none" : "1px solid rgba(255,255,255,0.08)",
-                }}
-                onClick={handleSignIn}
-                disabled={!nameInput.trim() || signingIn}
-              >
-                {signingIn ? "Signing in…" : "Sign In →"}
-              </button>
             </div>
 
             <p
@@ -514,6 +684,15 @@ export default function App() {
             >
               {me.isWorking ? "● working" : "○ on break"}
             </span>
+            <button
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              style={{ fontFamily: MONO }}
+              onClick={handleSignOut}
+              title="Sign out"
+            >
+              <LogOut size={12} strokeWidth={2.2} />
+              sign out
+            </button>
           </div>
         </header>
 
@@ -766,7 +945,12 @@ export default function App() {
               placeholder="e.g. Back-to-back meetings with no break..."
               value={tiredInput}
               onChange={(e) => setTiredInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && e.ctrlKey && handleDrainHp()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleDrainHp();
+                }
+              }}
               autoFocus
             />
             <div className="flex gap-2">

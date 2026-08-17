@@ -37,10 +37,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  signIn: (name: string) =>
+  checkAccountExists: (name: string) =>
+    request<{ exists: boolean }>(`/api/account/exists?name=${encodeURIComponent(name)}`),
+
+  signIn: (name: string, password: string) =>
     request<{ userId: string; user: ApiUser }>("/api/session", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, password }),
     }),
 
   getDashboard: (userId: string) =>
@@ -70,5 +73,10 @@ export const api = {
       body: JSON.stringify({ userId }),
     }),
 };
+
+export function getWsUrl(): string {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}/ws`;
+}
 
 export { ApiRequestError };

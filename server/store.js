@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 
 // ─── Error type ─────────────────────────────────────────────────────────────
 
@@ -7,6 +7,25 @@ export class ApiError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+// ─── Password hashing ───────────────────────────────────────────────────────
+
+const PASSWORD_MIN = 4;
+const PASSWORD_MAX = 72;
+
+function hashPassword(password) {
+  const salt = randomBytes(16);
+  const derived = scryptSync(password, salt, 64);
+  return `${salt.toString("hex")}:${derived.toString("hex")}`;
+}
+
+function verifyPassword(password, stored) {
+  const [saltHex, hashHex] = stored.split(":");
+  const salt = Buffer.from(saltHex, "hex");
+  const expected = Buffer.from(hashHex, "hex");
+  const actual = scryptSync(password, salt, expected.length);
+  return timingSafeEqual(actual, expected);
 }
 
 // ─── Seed data (mirrors the original static mock in the UI) ────────────────
@@ -84,6 +103,10 @@ function touchUser(user) {
   return user;
 }
 
+function findUserByName(name) {
+  return Array.from(users.values()).find((u) => u.name.toLowerCase() === name.toLowerCase());
+}
+
 function serializeEntry(e) {
   return {
     id: e.id,
@@ -97,13 +120,38 @@ function serializeEntry(e) {
 
 // ─── Public API ─────────────────────────────────────────────────────────
 
-export function createSession(name) {
+export function accountExists(name) {
+  const clean = (name || "").trim();
+  if (!clean) return false;
+  return Boolean(findUserByName(clean));
+}
+
+export function createSession(name, password) {
   const clean = (name || "").trim();
   if (!clean) throw new ApiError(400, "Name is required.");
   if (clean.length > 60) throw new ApiError(400, "Name is too long.");
 
+  const pw = password || "";
+  if (!pw) throw new ApiError(400, "Password is required.");
+  if (pw.length < PASSWORD_MIN) throw new ApiError(400, `Password must be at least ${PASSWORD_MIN} characters.`);
+  if (pw.length > PASSWORD_MAX) throw new ApiError(400, "Password is too long.");
+
+  const existing = findUserByName(clean);
+
+  if (existing) {
+    if (existing.passwordHash) {
+      if (!verifyPassword(pw, existing.passwordHash)) {
+        throw new ApiError(401, "Incorrect password.");
+      }
+    } else {
+      // Seed/legacy account with no password set yet — claim it.
+      existing.passwordHash = hashPassword(pw);
+    }
+    return serializeUser(touchUser(existing));
+  }
+
   const id = randomUUID();
-  const user = { id, name: clean, hp: 10, isWorking: true, updatedAt: new Date() };
+  const user = { id, name: clean, hp: 10, isWorking: true, updatedAt: new Date(), passwordHash: hashPassword(pw) };
   users.set(id, user);
   return serializeUser(user);
 }

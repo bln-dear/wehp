@@ -1,7 +1,9 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
 import apiRouter from "./routes/api.js";
+import { attach as attachWebSocket } from "./ws.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
@@ -23,6 +25,9 @@ app.get("*", (req, res, next) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
-app.listen(PORT, () => {
+const server = createServer(app);
+attachWebSocket(server);
+
+server.listen(PORT, () => {
   console.log(`WeHP server listening on http://localhost:${PORT}`);
 });

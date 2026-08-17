@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as store from "../store.js";
+import { broadcast } from "../ws.js";
 
 const router = Router();
 
@@ -16,11 +17,18 @@ function handle(fn) {
   };
 }
 
+// Check whether a name is already registered (used to warn on sign-in)
+router.get(
+  "/account/exists",
+  handle((req) => ({ exists: store.accountExists(req.query.name) }))
+);
+
 // Create a new user session ("sign in")
 router.post(
   "/session",
   handle((req) => {
-    const user = store.createSession(req.body?.name);
+    const user = store.createSession(req.body?.name, req.body?.password);
+    broadcast({ type: "update" });
     return { userId: user.id, user };
   })
 );
@@ -34,25 +42,41 @@ router.get(
 // Toggle working / on-break status
 router.post(
   "/break/toggle",
-  handle((req) => store.toggleBreak(req.body?.userId))
+  handle((req) => {
+    const result = store.toggleBreak(req.body?.userId);
+    broadcast({ type: "update" });
+    return result;
+  })
 );
 
 // Post a "tired" entry and drain 1 HP
 router.post(
   "/drain",
-  handle((req) => store.drainHp(req.body?.userId, req.body?.text))
+  handle((req) => {
+    const result = store.drainHp(req.body?.userId, req.body?.text);
+    broadcast({ type: "update" });
+    return result;
+  })
 );
 
 // Post a positive "potion" message to the board
 router.post(
   "/potion",
-  handle((req) => store.addPotion(req.body?.userId, req.body?.text))
+  handle((req) => {
+    const result = store.addPotion(req.body?.userId, req.body?.text);
+    broadcast({ type: "update" });
+    return result;
+  })
 );
 
 // Claim a potion for +1 HP
 router.post(
   "/potion/:id/claim",
-  handle((req) => store.claimPotion(req.body?.userId, req.params.id))
+  handle((req) => {
+    const result = store.claimPotion(req.body?.userId, req.params.id);
+    broadcast({ type: "update" });
+    return result;
+  })
 );
 
 export default router;
