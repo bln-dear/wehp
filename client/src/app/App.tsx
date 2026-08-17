@@ -798,11 +798,11 @@ export default function App() {
               </div>
 
               {/* User list */}
-              <div className="bg-card border border-border rounded-lg p-5 flex-1">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-4" style={{ fontFamily: MONO }}>
+              <div className="bg-card border border-border rounded-lg p-5 flex flex-col">
+                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-4 flex-shrink-0" style={{ fontFamily: MONO }}>
                   All Users
                 </p>
-                <div className="space-y-3 max-h-52 overflow-y-auto scroll-thin pr-1">
+                <div className="space-y-3 h-52 overflow-y-auto scroll-thin pr-1">
                   {users.map((user) => (
                     <div key={user.id} className="flex items-center gap-3">
                       <div
