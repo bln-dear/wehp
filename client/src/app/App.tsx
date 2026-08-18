@@ -463,6 +463,8 @@ export default function App() {
   const [checkingName, setCheckingName] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [draining, setDraining] = useState(false);
   const nameCheckCacheRef = useRef<{ name: string; exists: boolean } | null>(
     null,
   );
@@ -685,8 +687,9 @@ export default function App() {
   }
 
   async function handleDrainHp() {
-    if (!userId || !tiredInput.trim()) return;
+    if (!userId || !tiredInput.trim() || draining) return;
     setActionError(null);
+    setDraining(true);
     try {
       const { user } = await api.drainHp(userId, tiredInput.trim());
       setMe(user);
@@ -697,6 +700,8 @@ export default function App() {
       setActionError(
         err instanceof ApiRequestError ? err.message : "Something went wrong.",
       );
+    } finally {
+      setDraining(false);
     }
   }
 
@@ -713,9 +718,10 @@ export default function App() {
 
   async function handleSend() {
     const text = composerInput.trim();
-    if (!userId || !text) return;
+    if (!userId || !text || sending) return;
     if (sendMode === "potion" && (teamAvgMaxed || potionOnCooldown)) return;
     setActionError(null);
+    setSending(true);
     try {
       if (sendMode === "potion") {
         const { user } = await api.sendPotion(userId, text);
@@ -729,6 +735,8 @@ export default function App() {
       setActionError(
         err instanceof ApiRequestError ? err.message : "Something went wrong.",
       );
+    } finally {
+      setSending(false);
     }
   }
 
@@ -1328,6 +1336,7 @@ export default function App() {
                       onClick={handleSend}
                       disabled={
                         !composerInput.trim() ||
+                        sending ||
                         (sendMode === "potion" && potionOnCooldown)
                       }
                     >
@@ -1342,9 +1351,11 @@ export default function App() {
                         />
                       )}
                       <span className="relative">
-                        {sendMode === "potion" && potionOnCooldown
-                          ? `${Math.ceil(potionRemainingMs / 1000)}s`
-                          : "Send"}
+                        {sending
+                          ? "…"
+                          : sendMode === "potion" && potionOnCooldown
+                            ? `${Math.ceil(potionRemainingMs / 1000)}s`
+                            : "Send"}
                       </span>
                     </button>
                   </div>
@@ -1419,9 +1430,9 @@ export default function App() {
                   border: `1px solid ${tiredInput.trim() ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.08)"}`,
                 }}
                 onClick={handleDrainHp}
-                disabled={!tiredInput.trim()}
+                disabled={!tiredInput.trim() || draining}
               >
-                − 1 HP
+                {draining ? "…" : "− 1 HP"}
               </button>
             </div>
           </div>
