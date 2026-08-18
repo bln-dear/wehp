@@ -1,4 +1,5 @@
 import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { translateToGenZ } from "./ai.js";
 
 // ─── Error type ─────────────────────────────────────────────────────────────
 
@@ -205,16 +206,18 @@ export function addPotion(userId, text) {
   return { user: serializeUser(user), entry: serializeEntry(entry) };
 }
 
-export function addMessage(userId, text) {
+export async function addMessage(userId, text) {
   const user = touchUser(requireUser(userId));
   const clean = (text || "").trim();
   if (!clean) throw new ApiError(400, "Write something first.");
   if (clean.length > 280) throw new ApiError(400, "Message is too long.");
 
+  const translated = await translateToGenZ(clean);
+
   const entry = {
     id: randomUUID(),
     type: "message",
-    text: clean,
+    text: translated,
     time: new Date(),
     submitterId: user.id,
     claimedBy: [],

@@ -5,9 +5,9 @@ import { broadcast } from "../ws.js";
 const router = Router();
 
 function handle(fn) {
-  return (req, res) => {
+  return async (req, res) => {
     try {
-      const result = fn(req, res);
+      const result = await fn(req, res);
       res.json(result);
     } catch (err) {
       const status = err.status || 500;
@@ -72,8 +72,8 @@ router.post(
 // Post a plain text message to the board (no HP effect)
 router.post(
   "/message",
-  handle((req) => {
-    const result = store.addMessage(req.body?.userId, req.body?.text);
+  handle(async (req) => {
+    const result = await store.addMessage(req.body?.userId, req.body?.text);
     broadcast({ type: "update" });
     return result;
   })
