@@ -52,8 +52,8 @@ router.post(
 // Post a "tired" entry and drain 1 HP
 router.post(
   "/drain",
-  handle((req) => {
-    const result = store.drainHp(req.body?.userId, req.body?.text);
+  handle(async (req) => {
+    const result = await store.drainHp(req.body?.userId, req.body?.text);
     broadcast({ type: "update" });
     return result;
   })
@@ -62,8 +62,8 @@ router.post(
 // Post a positive "potion" message to the board
 router.post(
   "/potion",
-  handle((req) => {
-    const result = store.addPotion(req.body?.userId, req.body?.text);
+  handle(async (req) => {
+    const result = await store.addPotion(req.body?.userId, req.body?.text);
     broadcast({ type: "update" });
     return result;
   })

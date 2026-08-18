@@ -151,7 +151,7 @@ export function toggleBreak(userId) {
   return serializeUser(user);
 }
 
-export function drainHp(userId, text) {
+export async function drainHp(userId, text) {
   const user = requireUser(userId);
   const clean = (text || "").trim();
   if (!clean) throw new ApiError(400, "Please describe what's tiring you out.");
@@ -159,13 +159,15 @@ export function drainHp(userId, text) {
   if (!user.isWorking) throw new ApiError(400, "You can only log HP drain while working.");
   if (user.hp <= 0) throw new ApiError(400, "HP is already at 0.");
 
+  const translated = await translateToGenZ(clean);
+
   user.hp = Math.max(0, user.hp - 1);
   touchUser(user);
 
   const entry = {
     id: randomUUID(),
     type: "tired",
-    text: clean,
+    text: translated,
     time: new Date(),
     submitterId: user.id,
     claimedBy: [],
@@ -175,7 +177,7 @@ export function drainHp(userId, text) {
   return { user: serializeUser(user), entry: serializeEntry(entry) };
 }
 
-export function addPotion(userId, text) {
+export async function addPotion(userId, text) {
   const user = requireUser(userId);
   const clean = (text || "").trim();
   if (!clean) throw new ApiError(400, "Write something uplifting first.");
@@ -190,13 +192,15 @@ export function addPotion(userId, text) {
     }
   }
 
+  const translated = await translateToGenZ(clean);
+
   user.lastPotionAt = now;
   touchUser(user);
 
   const entry = {
     id: randomUUID(),
     type: "potion",
-    text: clean,
+    text: translated,
     time: now,
     submitterId: user.id,
     claimedBy: [],
