@@ -155,7 +155,7 @@ export async function drainHp(userId, text) {
   const user = requireUser(userId);
   const clean = (text || "").trim();
   if (!clean) throw new ApiError(400, "Please describe what's tiring you out.");
-  if (clean.length > 280) throw new ApiError(400, "Message is too long.");
+  if (clean.length > 100) throw new ApiError(400, "Message is too long.");
   if (!user.isWorking) throw new ApiError(400, "You can only log HP drain while working.");
   if (user.hp <= 0) throw new ApiError(400, "HP is already at 0.");
 
@@ -181,7 +181,7 @@ export async function addPotion(userId, text) {
   const user = requireUser(userId);
   const clean = (text || "").trim();
   if (!clean) throw new ApiError(400, "Write something uplifting first.");
-  if (clean.length > 280) throw new ApiError(400, "Message is too long.");
+  if (clean.length > 100) throw new ApiError(400, "Message is too long.");
 
   const now = new Date();
   if (user.lastPotionAt) {
@@ -214,7 +214,7 @@ export async function addMessage(userId, text) {
   const user = touchUser(requireUser(userId));
   const clean = (text || "").trim();
   if (!clean) throw new ApiError(400, "Write something first.");
-  if (clean.length > 280) throw new ApiError(400, "Message is too long.");
+  if (clean.length > 100) throw new ApiError(400, "Message is too long.");
 
   const translated = await translateToGenZ(clean);
 

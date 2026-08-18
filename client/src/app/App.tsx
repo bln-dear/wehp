@@ -1276,33 +1276,42 @@ export default function App() {
                       </button>
                     )}
                   </div>
-                  <div className="flex gap-3 items-end">
-                    <textarea
-                      ref={composerInputRef}
-                      rows={1}
-                      className="flex-1 min-w-0 bg-background border border-border rounded px-4 py-2.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/40 resize-none overflow-y-auto leading-relaxed disabled:opacity-40 disabled:cursor-not-allowed"
-                      style={{
-                        fontFamily: SANS,
-                        borderColor: composerInput.trim()
-                          ? sendMode === "potion"
-                            ? "rgba(34,197,94,0.3)"
-                            : "rgba(255,255,255,0.18)"
-                          : undefined,
-                      }}
-                      placeholder={
-                        sendMode === "potion"
-                          ? "Say something uplifting..."
-                          : "Say something..."
-                      }
-                      value={composerInput}
-                      onChange={(e) => setComposerInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSend();
+                  <div className="flex gap-3 items-start">
+                    <div className="w-full flex flex-col items-end">
+                      <textarea
+                        ref={composerInputRef}
+                        rows={1}
+                        maxLength={100}
+                        className="w-full flex-1 min-w-0 bg-background border border-border rounded px-4 py-2.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/40 resize-none overflow-y-auto leading-relaxed disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{
+                          fontFamily: SANS,
+                          borderColor: composerInput.trim()
+                            ? sendMode === "potion"
+                              ? "rgba(34,197,94,0.3)"
+                              : "rgba(255,255,255,0.18)"
+                            : undefined,
+                        }}
+                        placeholder={
+                          sendMode === "potion"
+                            ? "Say something uplifting..."
+                            : "Say something..."
                         }
-                      }}
-                    />
+                        value={composerInput}
+                        onChange={(e) => setComposerInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                          }
+                        }}
+                      />
+                      <p
+                        className="text-right text-xs mt-1"
+                        style={{ fontFamily: MONO, color: "#66667a" }}
+                      >
+                        {composerInput.length}/100
+                      </p>
+                    </div>
                     <button
                       className="w-[70px] relative overflow-hidden px-4 py-2.5 rounded text-sm font-bold leading-relaxed transition-all disabled:opacity-25 disabled:cursor-not-allowed flex-shrink-0"
                       style={{
@@ -1396,9 +1405,10 @@ export default function App() {
               anonymously.
             </p>
             <textarea
-              className="w-full bg-background border border-border rounded px-4 py-3 text-sm text-foreground outline-none focus:border-foreground/20 transition-colors resize-none mb-4 placeholder:text-muted-foreground/40"
+              className="w-full bg-background border border-border rounded px-4 py-3 text-sm text-foreground outline-none focus:border-foreground/20 transition-colors resize-none mb-1 placeholder:text-muted-foreground/40"
               style={{ fontFamily: SANS }}
               rows={3}
+              maxLength={100}
               placeholder="e.g. Back-to-back meetings with no break..."
               value={tiredInput}
               onChange={(e) => setTiredInput(e.target.value)}
@@ -1410,6 +1420,12 @@ export default function App() {
               }}
               autoFocus
             />
+            <p
+              className="text-right text-xs mb-3"
+              style={{ fontFamily: MONO, color: "#66667a" }}
+            >
+              {tiredInput.length}/100
+            </p>
             <div className="flex gap-2">
               <button
                 className="flex-1 py-3 rounded border border-border text-sm font-bold hover:bg-muted transition-colors"
