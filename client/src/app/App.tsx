@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { FlaskConical, LogOut } from "lucide-react";
+import { FlaskConical, Frown, LogOut, MessageCircle } from "lucide-react";
 import {
   api,
   ApiRequestError,
@@ -59,34 +59,45 @@ function HpSegments({ hp }: { hp: number }) {
   );
 }
 
-function BulbIcon({ color, hp }: { color: string; hp: number }) {
+function BulbIcon({
+  color,
+  hp,
+  off = false,
+}: {
+  color: string;
+  hp: number;
+  off?: boolean;
+}) {
   // brow: 0 = flat (happy), 4 = max angle (sad) — inner corners rise as HP drops
   const browAngle = (1 - hp / 10) * 4;
   // mouth control point y: 39.5 = big smile, 20.5 = big frown, 30 = neutral at hp=5
   const mouthCy = 30 + (hp - 5) * 1.9;
   const showBlush = hp >= 8;
   const face = "rgba(0,0,0,0.42)";
+  const glassColor = off ? "rgba(255,255,255,0.08)" : color;
 
   return (
     <div className="relative flex items-center justify-center">
-      <div
-        className="absolute rounded-full"
-        style={{
-          width: 60,
-          height: 60,
-          background: color,
-          opacity: 0.25,
-          filter: "blur(16px)",
-          top: "30%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-        }}
-      />
+      {!off && (
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: 60,
+            height: 60,
+            background: color,
+            opacity: 0.25,
+            filter: "blur(16px)",
+            top: "30%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        />
+      )}
       <svg width="44" height="60" viewBox="0 0 44 62" fill="none">
         {/* globe */}
         <path
           d="M22 3C11 3 4 11.5 4 22C4 32 10.5 40 16.5 44.5L16.5 49L27.5 49L27.5 44.5C33.5 40 40 32 40 22C40 11.5 33 3 22 3Z"
-          fill={color}
+          fill={glassColor}
           style={{ transition: "fill 0.5s" }}
         />
         {/* glass highlight */}
@@ -95,107 +106,111 @@ function BulbIcon({ color, hp }: { color: string; hp: number }) {
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
-          opacity="0.32"
+          opacity={off ? 0.14 : 0.32}
         />
 
         {/* ── Face ── */}
 
-        {/* blush cheeks (happy) */}
-        {showBlush && (
+        {!off && (
           <>
-            <ellipse
-              cx="11.5"
-              cy="28"
-              rx="3.5"
-              ry="2"
-              fill="white"
-              opacity="0.18"
+            {/* blush cheeks (happy) */}
+            {showBlush && (
+              <>
+                <ellipse
+                  cx="11.5"
+                  cy="28"
+                  rx="3.5"
+                  ry="2"
+                  fill="white"
+                  opacity="0.18"
+                />
+                <ellipse
+                  cx="32.5"
+                  cy="28"
+                  rx="3.5"
+                  ry="2"
+                  fill="white"
+                  opacity="0.18"
+                />
+              </>
+            )}
+
+            {/* left brow: outer (x=13) low, inner (x=18) high when sad */}
+            <path
+              d={`M 13 ${17 + browAngle} L 18 ${17 - browAngle}`}
+              stroke={face}
+              strokeWidth="1.6"
+              strokeLinecap="round"
             />
-            <ellipse
-              cx="32.5"
-              cy="28"
-              rx="3.5"
-              ry="2"
-              fill="white"
-              opacity="0.18"
+            {/* right brow: inner (x=26) high, outer (x=31) low when sad */}
+            <path
+              d={`M 26 ${17 - browAngle} L 31 ${17 + browAngle}`}
+              stroke={face}
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+
+            {/* eyes */}
+            {hp <= 1 ? (
+              /* × eyes at critical HP */
+              <>
+                <line
+                  x1="14"
+                  y1="20"
+                  x2="18"
+                  y2="24"
+                  stroke={face}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="18"
+                  y1="20"
+                  x2="14"
+                  y2="24"
+                  stroke={face}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="26"
+                  y1="20"
+                  x2="30"
+                  y2="24"
+                  stroke={face}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="30"
+                  y1="20"
+                  x2="26"
+                  y2="24"
+                  stroke={face}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </>
+            ) : (
+              <>
+                <circle cx="16" cy="22" r="1.9" fill={face} />
+                <circle cx="28" cy="22" r="1.9" fill={face} />
+                {/* shine dots */}
+                <circle cx="17" cy="21" r="0.7" fill="white" opacity="0.55" />
+                <circle cx="29" cy="21" r="0.7" fill="white" opacity="0.55" />
+              </>
+            )}
+
+            {/* mouth — curves up=frown, curves down=smile */}
+            <path
+              d={`M 15 30 Q 22 ${mouthCy} 29 30`}
+              stroke={face}
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              fill="none"
             />
           </>
         )}
-
-        {/* left brow: outer (x=13) low, inner (x=18) high when sad */}
-        <path
-          d={`M 13 ${17 + browAngle} L 18 ${17 - browAngle}`}
-          stroke={face}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-        {/* right brow: inner (x=26) high, outer (x=31) low when sad */}
-        <path
-          d={`M 26 ${17 - browAngle} L 31 ${17 + browAngle}`}
-          stroke={face}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-
-        {/* eyes */}
-        {hp <= 1 ? (
-          /* × eyes at critical HP */
-          <>
-            <line
-              x1="14"
-              y1="20"
-              x2="18"
-              y2="24"
-              stroke={face}
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-            <line
-              x1="18"
-              y1="20"
-              x2="14"
-              y2="24"
-              stroke={face}
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-            <line
-              x1="26"
-              y1="20"
-              x2="30"
-              y2="24"
-              stroke={face}
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-            <line
-              x1="30"
-              y1="20"
-              x2="26"
-              y2="24"
-              stroke={face}
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-          </>
-        ) : (
-          <>
-            <circle cx="16" cy="22" r="1.9" fill={face} />
-            <circle cx="28" cy="22" r="1.9" fill={face} />
-            {/* shine dots */}
-            <circle cx="17" cy="21" r="0.7" fill="white" opacity="0.55" />
-            <circle cx="29" cy="21" r="0.7" fill="white" opacity="0.55" />
-          </>
-        )}
-
-        {/* mouth — curves up=frown, curves down=smile */}
-        <path
-          d={`M 15 30 Q 22 ${mouthCy} 29 30`}
-          stroke={face}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          fill="none"
-        />
 
         {/* base bands */}
         <rect
@@ -204,8 +219,8 @@ function BulbIcon({ color, hp }: { color: string; hp: number }) {
           width="13"
           height="3"
           rx="0.6"
-          fill={color}
-          opacity="0.75"
+          fill={glassColor}
+          opacity={off ? 1 : 0.75}
           style={{ transition: "fill 0.5s" }}
         />
         <rect
@@ -214,8 +229,8 @@ function BulbIcon({ color, hp }: { color: string; hp: number }) {
           width="11"
           height="3"
           rx="0.6"
-          fill={color}
-          opacity="0.5"
+          fill={glassColor}
+          opacity={off ? 1 : 0.5}
           style={{ transition: "fill 0.5s" }}
         />
         <rect
@@ -224,8 +239,8 @@ function BulbIcon({ color, hp }: { color: string; hp: number }) {
           width="9"
           height="3"
           rx="1.5"
-          fill={color}
-          opacity="0.3"
+          fill={glassColor}
+          opacity={off ? 1 : 0.3}
           style={{ transition: "fill 0.5s" }}
         />
       </svg>
@@ -352,7 +367,43 @@ function PotionCard({
   );
 }
 
-function TiredEntry({ entry }: { entry: ApiBoardEntry }) {
+function TiredCard({ entry }: { entry: ApiBoardEntry }) {
+  return (
+    <div
+      className="rounded-lg p-4 flex items-start gap-3 transition-all duration-200"
+      style={{
+        backgroundColor: "rgba(148,163,184,0.04)",
+        border: "1px solid rgba(148,163,184,0.14)",
+      }}
+    >
+      {/* Tired icon */}
+      <Frown
+        size={14}
+        className="flex-shrink-0 mt-1"
+        style={{ color: "#94a3b8" }}
+        strokeWidth={2}
+      />
+
+      {/* Text */}
+      <div className="flex-1 min-w-0">
+        <p
+          className="text-sm leading-relaxed whitespace-pre-wrap break-words"
+          style={{ color: "rgba(226,226,232,0.75)" }}
+        >
+          {entry.text}
+        </p>
+        <span
+          className="text-xs text-muted-foreground mt-2 inline-block"
+          style={{ fontFamily: MONO }}
+        >
+          {formatTime(entry.time)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PlainEntry({ entry }: { entry: ApiBoardEntry }) {
   return (
     <div className="flex gap-4 px-1">
       <span
@@ -396,8 +447,11 @@ export default function App() {
     null,
   );
 
-  const [potionInput, setPotionInput] = useState("");
-  const potionInputRef = useRef<HTMLTextAreaElement>(null);
+  const [composerInput, setComposerInput] = useState("");
+  const composerInputRef = useRef<HTMLTextAreaElement>(null);
+  const [sendMode, setSendMode] = useState<"potion" | "message">("potion");
+  const [potionCooldownMs, setPotionCooldownMs] = useState(60000);
+  const [now, setNow] = useState(() => Date.now());
   const [showDrainModal, setShowDrainModal] = useState(false);
   const [tiredInput, setTiredInput] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -405,17 +459,45 @@ export default function App() {
   const boardEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const el = potionInputRef.current;
+    const el = composerInputRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-  }, [potionInput]);
+  }, [composerInput]);
 
   const activeUsers = users.filter((u) => u.isWorking);
   const avgHp =
     activeUsers.length > 0
       ? activeUsers.reduce((s, u) => s + u.hp, 0) / activeUsers.length
       : 0;
+  const teamAvgMaxed = Math.round(avgHp) >= 10;
+
+  useEffect(() => {
+    if (teamAvgMaxed && sendMode === "potion") setSendMode("message");
+  }, [teamAvgMaxed, sendMode]);
+
+  const potionReadyAtMs = me?.potionReadyAt
+    ? new Date(me.potionReadyAt).getTime()
+    : 0;
+
+  // Tick the clock while a potion cooldown is counting down so the send
+  // button's progress bar and countdown stay live; stops itself once ready.
+  useEffect(() => {
+    if (!potionReadyAtMs || potionReadyAtMs <= Date.now()) return;
+    const interval = setInterval(() => {
+      const nowMs = Date.now();
+      setNow(nowMs);
+      if (nowMs >= potionReadyAtMs) clearInterval(interval);
+    }, 250);
+    return () => clearInterval(interval);
+  }, [potionReadyAtMs]);
+
+  const potionRemainingMs = Math.max(0, potionReadyAtMs - now);
+  const potionOnCooldown = potionRemainingMs > 0;
+  const potionCooldownProgress =
+    potionCooldownMs > 0
+      ? Math.min(1, Math.max(0, 1 - potionRemainingMs / potionCooldownMs))
+      : 1;
 
   function scrollBoard() {
     setTimeout(
@@ -450,6 +532,7 @@ export default function App() {
       setMe(data.me);
       setUsers(data.users);
       setBoard(data.board);
+      setPotionCooldownMs(data.stats.potionCooldownMs);
     } catch {
       // Transient network hiccup during polling — ignore and try again next tick.
     }
@@ -608,12 +691,19 @@ export default function App() {
     }
   }
 
-  async function handleSendPotion() {
-    if (!userId || !potionInput.trim()) return;
+  async function handleSend() {
+    const text = composerInput.trim();
+    if (!userId || !text) return;
+    if (sendMode === "potion" && (teamAvgMaxed || potionOnCooldown)) return;
     setActionError(null);
     try {
-      await api.sendPotion(userId, potionInput.trim());
-      setPotionInput("");
+      if (sendMode === "potion") {
+        const { user } = await api.sendPotion(userId, text);
+        setMe(user);
+      } else {
+        await api.sendMessage(userId, text);
+      }
+      setComposerInput("");
       await refreshDashboard(userId);
     } catch (err) {
       setActionError(
@@ -912,12 +1002,12 @@ export default function App() {
 
                 <div className="flex gap-3 mt-4">
                   <button
-                    className="flex-1 py-2 rounded border border-border text-sm font-bold tracking-wide hover:bg-muted transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded border border-border text-sm font-bold tracking-wide hover:bg-muted transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
                     style={{ fontFamily: SANS }}
                     onClick={() => setShowDrainModal(true)}
                     disabled={!me.isWorking || me.hp <= 0}
                   >
-                    − 1 HP
+                    <div> − 1 HP</div>
                   </button>
                   <button
                     className="flex-1 py-2 rounded text-sm font-bold tracking-wide transition-all"
@@ -937,7 +1027,7 @@ export default function App() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 flex-shrink-0">
+              <div className="grid grid-cols-2 gap-4 flex-shrink-0">
                 <div className="bg-card border border-border rounded-lg p-4 flex flex-col items-center">
                   <p
                     className="text-xs uppercase tracking-widest text-muted-foreground mb-3 self-start"
@@ -945,70 +1035,78 @@ export default function App() {
                   >
                     Team Avg
                   </p>
-                  <BulbIcon
-                    color={getHpColor(Math.round(avgHp))}
-                    hp={Math.round(avgHp)}
-                  />
-                  <div className="flex items-baseline gap-1 mt-3">
-                    <span
-                      className="text-xl font-black tabular-nums"
-                      style={{
-                        fontFamily: MONO,
-                        color: getHpColor(Math.round(avgHp)),
-                        transition: "color 0.5s",
-                      }}
-                    >
-                      {avgHp.toFixed(1)}
-                    </span>
-                    <span
-                      className="text-muted-foreground text-xs"
-                      style={{ fontFamily: MONO }}
-                    >
-                      /10
-                    </span>
+                  <div className="flex flex-col h-full justify-center">
+                    <BulbIcon
+                      color={getHpColor(Math.round(avgHp))}
+                      hp={Math.round(avgHp)}
+                      off={activeUsers.length === 0}
+                    />
+                    <div className="flex items-baseline gap-1 mt-3">
+                      <span
+                        className="text-xl font-black tabular-nums"
+                        style={{
+                          fontFamily: MONO,
+                          color:
+                            activeUsers.length === 0
+                              ? "#66667a"
+                              : getHpColor(Math.round(avgHp)),
+                          transition: "color 0.5s",
+                        }}
+                      >
+                        {activeUsers.length === 0 ? "—" : avgHp.toFixed(1)}
+                      </span>
+                      <span
+                        className="text-muted-foreground text-xs"
+                        style={{ fontFamily: MONO }}
+                      >
+                        /10
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <p
-                    className="text-xs uppercase tracking-widest text-muted-foreground mb-3"
-                    style={{ fontFamily: MONO }}
-                  >
-                    Working
-                  </p>
-                  <p
-                    className="text-2xl font-black tabular-nums text-foreground"
-                    style={{ fontFamily: MONO }}
-                  >
-                    {activeUsers.length}
-                  </p>
-                  <p
-                    className="text-xs text-muted-foreground mt-1"
-                    style={{ fontFamily: MONO }}
-                  >
-                    active now
-                  </p>
-                </div>
+                <div className="flex flex-col gap-4">
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    <p
+                      className="text-xs uppercase tracking-widest text-muted-foreground mb-3"
+                      style={{ fontFamily: MONO }}
+                    >
+                      Working
+                    </p>
+                    <p
+                      className="text-2xl font-black tabular-nums text-foreground"
+                      style={{ fontFamily: MONO }}
+                    >
+                      {activeUsers.length}
+                    </p>
+                    <p
+                      className="text-xs text-muted-foreground mt-1"
+                      style={{ fontFamily: MONO }}
+                    >
+                      active now
+                    </p>
+                  </div>
 
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <p
-                    className="text-xs uppercase tracking-widest text-muted-foreground mb-3"
-                    style={{ fontFamily: MONO }}
-                  >
-                    Total
-                  </p>
-                  <p
-                    className="text-2xl font-black tabular-nums text-foreground"
-                    style={{ fontFamily: MONO }}
-                  >
-                    {users.length}
-                  </p>
-                  <p
-                    className="text-xs text-muted-foreground mt-1"
-                    style={{ fontFamily: MONO }}
-                  >
-                    in system
-                  </p>
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    <p
+                      className="text-xs uppercase tracking-widest text-muted-foreground mb-3"
+                      style={{ fontFamily: MONO }}
+                    >
+                      Total
+                    </p>
+                    <p
+                      className="text-2xl font-black tabular-nums text-foreground"
+                      style={{ fontFamily: MONO }}
+                    >
+                      {users.length}
+                    </p>
+                    <p
+                      className="text-xs text-muted-foreground mt-1"
+                      style={{ fontFamily: MONO }}
+                    >
+                      in system
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1061,7 +1159,7 @@ export default function App() {
             </div>
 
             {/* Board */}
-            <div className="lg:w-1/3 min-h-0">
+            <div className="lg:w-1/2 min-h-0">
               <div className="bg-card border border-border rounded-lg p-6 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-5 flex-shrink-0">
                   <p
@@ -1089,8 +1187,10 @@ export default function App() {
                         myHp={me.hp}
                         onClaim={handleClaimPotion}
                       />
+                    ) : entry.type === "tired" ? (
+                      <TiredCard key={entry.id} entry={entry} />
                     ) : (
-                      <TiredEntry key={entry.id} entry={entry} />
+                      <PlainEntry key={entry.id} entry={entry} />
                     ),
                   )}
                   <div ref={boardEndRef} />
@@ -1105,58 +1205,129 @@ export default function App() {
                   </p>
                 )}
 
-                {/* Potion input */}
-                <div className="flex gap-3 pt-5 border-t border-border items-end">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FlaskConical
-                        size={12}
-                        style={{ color: "#22c55e" }}
-                        strokeWidth={2.5}
-                      />
-                      <span
-                        className="text-xs text-muted-foreground"
-                        style={{ fontFamily: MONO }}
+                {/* Composer */}
+                <div className="pt-5 border-t border-border">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold transition-all"
+                      style={{
+                        fontFamily: MONO,
+                        backgroundColor:
+                          sendMode === "message"
+                            ? "rgba(255,255,255,0.08)"
+                            : "transparent",
+                        color: sendMode === "message" ? "#e2e2e8" : "#66667a",
+                      }}
+                      onClick={() => setSendMode("message")}
+                    >
+                      <MessageCircle size={12} strokeWidth={2.5} />
+                      Message
+                    </button>
+                    {!teamAvgMaxed && (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold transition-all"
+                        style={{
+                          fontFamily: MONO,
+                          backgroundColor:
+                            sendMode === "potion"
+                              ? "rgba(34,197,94,0.12)"
+                              : "transparent",
+                          color: sendMode === "potion" ? "#22c55e" : "#66667a",
+                        }}
+                        onClick={() => setSendMode("potion")}
                       >
-                        Send an energy potion — positive words only
-                      </span>
-                    </div>
+                        <FlaskConical size={12} strokeWidth={2.5} />
+                        Potion
+                        {potionOnCooldown && (
+                          <span style={{ color: "#66667a" }}>
+                            · {Math.ceil(potionRemainingMs / 1000)}s
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-3 items-end">
                     <textarea
-                      ref={potionInputRef}
+                      ref={composerInputRef}
                       rows={1}
-                      className="w-full bg-background border border-border rounded px-4 py-2.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/40 resize-none overflow-y-auto leading-relaxed"
+                      className="flex-1 min-w-0 bg-background border border-border rounded px-4 py-2.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/40 resize-none overflow-y-auto leading-relaxed disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{
                         fontFamily: SANS,
-                        borderColor: potionInput.trim()
-                          ? "rgba(34,197,94,0.3)"
+                        borderColor: composerInput.trim()
+                          ? sendMode === "potion"
+                            ? "rgba(34,197,94,0.3)"
+                            : "rgba(255,255,255,0.18)"
                           : undefined,
                       }}
-                      placeholder="Write something uplifting for your colleagues..."
-                      value={potionInput}
-                      onChange={(e) => setPotionInput(e.target.value)}
+                      placeholder={
+                        sendMode === "potion"
+                          ? "Say something uplifting..."
+                          : "Say something..."
+                      }
+                      value={composerInput}
+                      onChange={(e) => setComposerInput(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
-                          handleSendPotion();
+                          handleSend();
                         }
                       }}
                     />
+                    <button
+                      className="relative overflow-hidden px-4 py-2.5 rounded text-sm font-bold leading-relaxed transition-all disabled:opacity-25 disabled:cursor-not-allowed flex-shrink-0"
+                      style={{
+                        fontFamily: SANS,
+                        backgroundColor:
+                          sendMode === "potion" && potionOnCooldown
+                            ? "rgba(255,255,255,0.04)"
+                            : composerInput.trim()
+                              ? sendMode === "potion"
+                                ? "rgba(34,197,94,0.12)"
+                                : "rgba(255,255,255,0.08)"
+                              : "rgba(255,255,255,0.04)",
+                        color:
+                          sendMode === "potion" && potionOnCooldown
+                            ? "#66667a"
+                            : composerInput.trim()
+                              ? sendMode === "potion"
+                                ? "#22c55e"
+                                : "#e2e2e8"
+                              : "#66667a",
+                        border: `1px solid ${
+                          sendMode === "potion" && potionOnCooldown
+                            ? "rgba(255,255,255,0.08)"
+                            : composerInput.trim()
+                              ? sendMode === "potion"
+                                ? "rgba(34,197,94,0.25)"
+                                : "rgba(255,255,255,0.18)"
+                              : "rgba(255,255,255,0.08)"
+                        }`,
+                      }}
+                      onClick={handleSend}
+                      disabled={
+                        !composerInput.trim() ||
+                        (sendMode === "potion" && potionOnCooldown)
+                      }
+                    >
+                      {sendMode === "potion" && potionOnCooldown && (
+                        <span
+                          className="absolute inset-y-0 left-0"
+                          style={{
+                            width: `${potionCooldownProgress * 100}%`,
+                            backgroundColor: "rgba(34,197,94,0.14)",
+                            transition: "width 0.25s linear",
+                          }}
+                        />
+                      )}
+                      <span className="relative">
+                        {sendMode === "potion" && potionOnCooldown
+                          ? `${Math.ceil(potionRemainingMs / 1000)}s`
+                          : "Send"}
+                      </span>
+                    </button>
                   </div>
-                  <button
-                    className="px-4 py-2.5 rounded text-sm font-bold transition-all disabled:opacity-25 disabled:cursor-not-allowed flex-shrink-0"
-                    style={{
-                      fontFamily: SANS,
-                      backgroundColor: potionInput.trim()
-                        ? "rgba(34,197,94,0.12)"
-                        : "rgba(255,255,255,0.04)",
-                      color: potionInput.trim() ? "#22c55e" : "#66667a",
-                      border: `1px solid ${potionInput.trim() ? "rgba(34,197,94,0.25)" : "rgba(255,255,255,0.08)"}`,
-                    }}
-                    onClick={handleSendPotion}
-                    disabled={!potionInput.trim()}
-                  >
-                    Send ⚗
-                  </button>
                 </div>
               </div>
             </div>

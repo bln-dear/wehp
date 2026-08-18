@@ -4,11 +4,12 @@ export interface ApiUser {
   hp: number;
   isWorking: boolean;
   updatedAt?: string;
+  potionReadyAt: string | null;
 }
 
 export interface ApiBoardEntry {
   id: string;
-  type: "tired" | "potion";
+  type: "tired" | "potion" | "message";
   text: string;
   time: string; // ISO string
   submitterId: string;
@@ -19,7 +20,12 @@ export interface DashboardResponse {
   me: ApiUser | null;
   users: ApiUser[];
   board: ApiBoardEntry[];
-  stats: { avgHp: number; activeCount: number; totalCount: number };
+  stats: {
+    avgHp: number;
+    activeCount: number;
+    totalCount: number;
+    potionCooldownMs: number;
+  };
 }
 
 class ApiRequestError extends Error {}
@@ -62,7 +68,13 @@ export const api = {
     }),
 
   sendPotion: (userId: string, text: string) =>
-    request<ApiBoardEntry>("/api/potion", {
+    request<{ user: ApiUser; entry: ApiBoardEntry }>("/api/potion", {
+      method: "POST",
+      body: JSON.stringify({ userId, text }),
+    }),
+
+  sendMessage: (userId: string, text: string) =>
+    request<ApiBoardEntry>("/api/message", {
       method: "POST",
       body: JSON.stringify({ userId, text }),
     }),

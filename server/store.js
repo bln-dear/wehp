@@ -28,6 +28,10 @@ function verifyPassword(password, stored) {
   return timingSafeEqual(actual, expected);
 }
 
+// ─── Config ──────────────────────────────────────────────────────────────
+
+const POTION_COOLDOWN_MS = (Number(process.env.POTION_COOLDOWN_SECONDS) || 60) * 1000;
+
 // ─── In-memory data ─────────────────────────────────────────────────────────
 
 const users = new Map();
@@ -43,7 +47,16 @@ function requireUser(userId) {
 }
 
 function serializeUser(u) {
-  return { id: u.id, name: u.name, hp: u.hp, isWorking: u.isWorking, updatedAt: u.updatedAt.toISOString() };
+  return {
+    id: u.id,
+    name: u.name,
+    hp: u.hp,
+    isWorking: u.isWorking,
+    updatedAt: u.updatedAt.toISOString(),
+    potionReadyAt: u.lastPotionAt
+      ? new Date(u.lastPotionAt.getTime() + POTION_COOLDOWN_MS).toISOString()
+      : null,
+  };
 }
 
 function touchUser(user) {
@@ -126,6 +139,7 @@ export function getDashboard(userId) {
       avgHp,
       activeCount: activeUsers.length,
       totalCount: allUsers.length,
+      potionCooldownMs: POTION_COOLDOWN_MS,
     },
   };
 }
@@ -161,14 +175,45 @@ export function drainHp(userId, text) {
 }
 
 export function addPotion(userId, text) {
-  const user = touchUser(requireUser(userId));
+  const user = requireUser(userId);
   const clean = (text || "").trim();
   if (!clean) throw new ApiError(400, "Write something uplifting first.");
   if (clean.length > 280) throw new ApiError(400, "Message is too long.");
 
+  const now = new Date();
+  if (user.lastPotionAt) {
+    const readyAt = user.lastPotionAt.getTime() + POTION_COOLDOWN_MS;
+    if (now.getTime() < readyAt) {
+      const waitSeconds = Math.ceil((readyAt - now.getTime()) / 1000);
+      throw new ApiError(429, `Please wait ${waitSeconds}s before sending another potion.`);
+    }
+  }
+
+  user.lastPotionAt = now;
+  touchUser(user);
+
   const entry = {
     id: randomUUID(),
     type: "potion",
+    text: clean,
+    time: now,
+    submitterId: user.id,
+    claimedBy: [],
+  };
+  board.push(entry);
+
+  return { user: serializeUser(user), entry: serializeEntry(entry) };
+}
+
+export function addMessage(userId, text) {
+  const user = touchUser(requireUser(userId));
+  const clean = (text || "").trim();
+  if (!clean) throw new ApiError(400, "Write something first.");
+  if (clean.length > 280) throw new ApiError(400, "Message is too long.");
+
+  const entry = {
+    id: randomUUID(),
+    type: "message",
     text: clean,
     time: new Date(),
     submitterId: user.id,

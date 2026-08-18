@@ -69,6 +69,16 @@ router.post(
   })
 );
 
+// Post a plain text message to the board (no HP effect)
+router.post(
+  "/message",
+  handle((req) => {
+    const result = store.addMessage(req.body?.userId, req.body?.text);
+    broadcast({ type: "update" });
+    return result;
+  })
+);
+
 // Claim a potion for +1 HP
 router.post(
   "/potion/:id/claim",
