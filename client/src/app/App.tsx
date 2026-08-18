@@ -69,31 +69,34 @@ function BulbIcon({
   off?: boolean;
 }) {
   // brow: 0 = flat (happy), 4 = max angle (sad) — inner corners rise as HP drops
-  const browAngle = (1 - hp / 10) * 4;
+  const browAngle = off ? 0 : (1 - hp / 10) * 4;
   // mouth control point y: 39.5 = big smile, 20.5 = big frown, 30 = neutral at hp=5
-  const mouthCy = 30 + (hp - 5) * 1.9;
-  const showBlush = hp >= 8;
+  const mouthCy = off ? 30 : 30 + (hp - 5) * 1.9;
+  const showBlush = !off && hp >= 8;
+  const showCritical = !off && hp <= 1;
   const face = "rgba(0,0,0,0.42)";
   const glassColor = off ? "rgba(255,255,255,0.08)" : color;
+  const browPath = (x1: number, x2: number, up: boolean) =>
+    `path("M ${x1} ${17 + (up ? browAngle : -browAngle)} L ${x2} ${17 + (up ? -browAngle : browAngle)}")`;
 
   return (
     <div className="relative flex items-center justify-center">
-      {!off && (
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: 60,
-            height: 60,
-            background: color,
-            opacity: 0.25,
-            filter: "blur(16px)",
-            top: "30%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        />
-      )}
-      <svg width="44" height="60" viewBox="0 0 44 62" fill="none">
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: 90,
+          height: 90,
+          background: color,
+          opacity: off ? 0 : 0.25,
+          filter: "blur(22px)",
+          top: "30%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          transition: "opacity 0.6s ease, background 0.5s",
+          animation: off ? "none" : "bulb-breathe 3s ease-in-out infinite",
+        }}
+      />
+      <svg width="66" height="90" viewBox="0 0 44 62" fill="none">
         {/* globe */}
         <path
           d="M22 3C11 3 4 11.5 4 22C4 32 10.5 40 16.5 44.5L16.5 49L27.5 49L27.5 44.5C33.5 40 40 32 40 22C40 11.5 33 3 22 3Z"
@@ -106,111 +109,122 @@ function BulbIcon({
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
-          opacity={off ? 0.14 : 0.32}
+          style={{ opacity: off ? 0.14 : 0.32, transition: "opacity 0.5s" }}
         />
 
         {/* ── Face ── */}
+        <g style={{ opacity: off ? 0 : 1, transition: "opacity 0.5s ease" }}>
+          {/* blush cheeks (happy) */}
+          <ellipse
+            cx="11.5"
+            cy="28"
+            rx="3.5"
+            ry="2"
+            fill="white"
+            style={{
+              opacity: showBlush ? 0.18 : 0,
+              transition: "opacity 0.4s ease",
+            }}
+          />
+          <ellipse
+            cx="32.5"
+            cy="28"
+            rx="3.5"
+            ry="2"
+            fill="white"
+            style={{
+              opacity: showBlush ? 0.18 : 0,
+              transition: "opacity 0.4s ease",
+            }}
+          />
 
-        {!off && (
-          <>
-            {/* blush cheeks (happy) */}
-            {showBlush && (
-              <>
-                <ellipse
-                  cx="11.5"
-                  cy="28"
-                  rx="3.5"
-                  ry="2"
-                  fill="white"
-                  opacity="0.18"
-                />
-                <ellipse
-                  cx="32.5"
-                  cy="28"
-                  rx="3.5"
-                  ry="2"
-                  fill="white"
-                  opacity="0.18"
-                />
-              </>
-            )}
+          {/* left brow: outer (x=13) low, inner (x=18) high when sad */}
+          <path
+            d={`M 13 ${17 + browAngle} L 18 ${17 - browAngle}`}
+            stroke={face}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            style={{ d: browPath(13, 18, true), transition: "d 0.4s ease" }}
+          />
+          {/* right brow: inner (x=26) high, outer (x=31) low when sad */}
+          <path
+            d={`M 26 ${17 - browAngle} L 31 ${17 + browAngle}`}
+            stroke={face}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            style={{ d: browPath(26, 31, false), transition: "d 0.4s ease" }}
+          />
 
-            {/* left brow: outer (x=13) low, inner (x=18) high when sad */}
-            <path
-              d={`M 13 ${17 + browAngle} L 18 ${17 - browAngle}`}
+          {/* eyes — cross-fade between dots and × */}
+          <g
+            style={{
+              opacity: showCritical ? 0 : 1,
+              transition: "opacity 0.35s ease",
+            }}
+          >
+            <circle cx="16" cy="22" r="1.9" fill={face} />
+            <circle cx="28" cy="22" r="1.9" fill={face} />
+            {/* shine dots */}
+            <circle cx="17" cy="21" r="0.7" fill="white" opacity="0.55" />
+            <circle cx="29" cy="21" r="0.7" fill="white" opacity="0.55" />
+          </g>
+          <g
+            style={{
+              opacity: showCritical ? 1 : 0,
+              transition: "opacity 0.35s ease",
+            }}
+          >
+            <line
+              x1="14"
+              y1="20"
+              x2="18"
+              y2="24"
               stroke={face}
               strokeWidth="1.6"
               strokeLinecap="round"
             />
-            {/* right brow: inner (x=26) high, outer (x=31) low when sad */}
-            <path
-              d={`M 26 ${17 - browAngle} L 31 ${17 + browAngle}`}
+            <line
+              x1="18"
+              y1="20"
+              x2="14"
+              y2="24"
               stroke={face}
               strokeWidth="1.6"
               strokeLinecap="round"
             />
-
-            {/* eyes */}
-            {hp <= 1 ? (
-              /* × eyes at critical HP */
-              <>
-                <line
-                  x1="14"
-                  y1="20"
-                  x2="18"
-                  y2="24"
-                  stroke={face}
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-                <line
-                  x1="18"
-                  y1="20"
-                  x2="14"
-                  y2="24"
-                  stroke={face}
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-                <line
-                  x1="26"
-                  y1="20"
-                  x2="30"
-                  y2="24"
-                  stroke={face}
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-                <line
-                  x1="30"
-                  y1="20"
-                  x2="26"
-                  y2="24"
-                  stroke={face}
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-              </>
-            ) : (
-              <>
-                <circle cx="16" cy="22" r="1.9" fill={face} />
-                <circle cx="28" cy="22" r="1.9" fill={face} />
-                {/* shine dots */}
-                <circle cx="17" cy="21" r="0.7" fill="white" opacity="0.55" />
-                <circle cx="29" cy="21" r="0.7" fill="white" opacity="0.55" />
-              </>
-            )}
-
-            {/* mouth — curves up=frown, curves down=smile */}
-            <path
-              d={`M 15 30 Q 22 ${mouthCy} 29 30`}
+            <line
+              x1="26"
+              y1="20"
+              x2="30"
+              y2="24"
               stroke={face}
               strokeWidth="1.6"
               strokeLinecap="round"
-              fill="none"
             />
-          </>
-        )}
+            <line
+              x1="30"
+              y1="20"
+              x2="26"
+              y2="24"
+              stroke={face}
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+          </g>
+
+          {/* mouth — curves up=frown, curves down=smile */}
+          <path
+            d={`M 15 30 Q 22 ${mouthCy} 29 30`}
+            stroke={face}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            fill="none"
+            style={{
+              d: `path("M 15 30 Q 22 ${mouthCy} 29 30")`,
+              transition: "d 0.4s ease",
+            }}
+          />
+        </g>
 
         {/* base bands */}
         <rect
@@ -220,8 +234,10 @@ function BulbIcon({
           height="3"
           rx="0.6"
           fill={glassColor}
-          opacity={off ? 1 : 0.75}
-          style={{ transition: "fill 0.5s" }}
+          style={{
+            opacity: off ? 1 : 0.75,
+            transition: "fill 0.5s, opacity 0.5s",
+          }}
         />
         <rect
           x="16.5"
@@ -230,8 +246,10 @@ function BulbIcon({
           height="3"
           rx="0.6"
           fill={glassColor}
-          opacity={off ? 1 : 0.5}
-          style={{ transition: "fill 0.5s" }}
+          style={{
+            opacity: off ? 1 : 0.5,
+            transition: "fill 0.5s, opacity 0.5s",
+          }}
         />
         <rect
           x="17.5"
@@ -240,8 +258,10 @@ function BulbIcon({
           height="3"
           rx="1.5"
           fill={glassColor}
-          opacity={off ? 1 : 0.3}
-          style={{ transition: "fill 0.5s" }}
+          style={{
+            opacity: off ? 1 : 0.3,
+            transition: "fill 0.5s, opacity 0.5s",
+          }}
         />
       </svg>
     </div>
@@ -1276,7 +1296,7 @@ export default function App() {
                       }}
                     />
                     <button
-                      className="relative overflow-hidden px-4 py-2.5 rounded text-sm font-bold leading-relaxed transition-all disabled:opacity-25 disabled:cursor-not-allowed flex-shrink-0"
+                      className="w-[70px] relative overflow-hidden px-4 py-2.5 rounded text-sm font-bold leading-relaxed transition-all disabled:opacity-25 disabled:cursor-not-allowed flex-shrink-0"
                       style={{
                         fontFamily: SANS,
                         backgroundColor:
@@ -1361,8 +1381,8 @@ export default function App() {
               What&apos;s making you tired?
             </h3>
             <p className="text-sm text-muted-foreground mb-5">
-              Write it down. Your words will be posted anonymously, and your HP
-              will drop by 1.
+              Let them know what's on your mind. Your words will be posted
+              anonymously.
             </p>
             <textarea
               className="w-full bg-background border border-border rounded px-4 py-3 text-sm text-foreground outline-none focus:border-foreground/20 transition-colors resize-none mb-4 placeholder:text-muted-foreground/40"
@@ -1416,4 +1436,9 @@ const scrollbarStyles = `
   .scroll-thin::-webkit-scrollbar-track { background: transparent; }
   .scroll-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
   .scroll-thin { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+
+  @keyframes bulb-breathe {
+    0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.08); }
+  }
 `;
