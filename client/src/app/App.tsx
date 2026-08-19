@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { FlaskConical, Frown, LogOut, MessageCircle } from "lucide-react";
+import {
+  ChevronDown,
+  FlaskConical,
+  Frown,
+  LogOut,
+  MessageCircle,
+} from "lucide-react";
 import {
   api,
   ApiRequestError,
@@ -57,7 +63,7 @@ function HpSegments({ hp }: { hp: number }) {
       {Array.from({ length: 10 }, (_, i) => (
         <div
           key={i}
-          className="flex-1 h-5 rounded-sm transition-all duration-500"
+          className="flex-1 h-4 sm:h-5 rounded-sm transition-all duration-500"
           style={{
             backgroundColor: i < hp ? color : "rgba(255,255,255,0.06)",
             boxShadow: i < hp ? `0 0 6px ${color}40` : "none",
@@ -91,13 +97,11 @@ function BulbIcon({
   return (
     <div className="relative flex items-center justify-center">
       <div
-        className="absolute rounded-full"
+        className="absolute rounded-full w-11 h-11 sm:w-[90px] sm:h-[90px]"
         style={{
-          width: 90,
-          height: 90,
           background: color,
           opacity: off ? 0 : 0.25,
-          filter: "blur(22px)",
+          filter: "blur(14px)",
           top: "30%",
           left: "50%",
           transform: "translate(-50%, -50%)",
@@ -105,7 +109,11 @@ function BulbIcon({
           animation: off ? "none" : "bulb-breathe 3s ease-in-out infinite",
         }}
       />
-      <svg width="66" height="90" viewBox="0 0 44 62" fill="none">
+      <svg
+        className="w-8 h-11 sm:w-[66px] sm:h-[90px]"
+        viewBox="0 0 44 62"
+        fill="none"
+      >
         {/* globe */}
         <path
           d="M22 3C11 3 4 11.5 4 22C4 32 10.5 40 16.5 44.5L16.5 49L27.5 49L27.5 44.5C33.5 40 40 32 40 22C40 11.5 33 3 22 3Z"
@@ -295,102 +303,104 @@ function PotionCard({
   const atMaxHp = myHp >= 10;
 
   return (
-    <div
-      className="rounded-lg p-4 flex items-start gap-3 transition-all duration-200"
-      style={{
-        backgroundColor: "rgba(34,197,94,0.05)",
-        border: "1px solid rgba(34,197,94,0.18)",
-      }}
-    >
-      {/* Potion icon */}
-      <div
-        className="flex-shrink-0 w-8 h-8 rounded flex items-center justify-center mt-0.5"
-        style={{ backgroundColor: "rgba(34,197,94,0.12)" }}
+    <div className="flex items-center sm:items-start gap-2 sm:gap-4 px-1">
+      {/* Timestamp */}
+      <span
+        className="text-[10px] sm:text-xs text-muted-foreground/60 flex-shrink-0 tabular-nums sm:mt-4"
+        style={{ fontFamily: MONO }}
       >
-        <FlaskConical
-          size={15}
-          style={{ color: "#22c55e" }}
-          strokeWidth={2.2}
-        />
-      </div>
+        {formatTime(entry.time)}
+      </span>
 
-      {/* Text */}
-      <div className="flex-1 min-w-0">
-        <p
-          className="text-sm leading-relaxed whitespace-pre-wrap break-words"
-          style={{ color: "rgba(226,226,232,0.88)" }}
+      <div
+        className="flex-1 min-w-0 rounded-lg p-2 sm:p-4 flex items-center sm:items-start gap-2 sm:gap-4 transition-all duration-200"
+        style={{
+          backgroundColor: "rgba(34,197,94,0.05)",
+          border: "1px solid rgba(34,197,94,0.18)",
+        }}
+      >
+        {/* Potion icon */}
+        <div
+          className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center sm:mt-0.5"
+          style={{ backgroundColor: "rgba(34,197,94,0.12)" }}
         >
-          {entry.text}
-        </p>
-        <div className="flex items-center gap-3 mt-2">
-          <span
-            className="text-xs text-muted-foreground"
-            style={{ fontFamily: MONO }}
+          <FlaskConical
+            className="w-3 h-3 sm:w-[15px] sm:h-[15px]"
+            style={{ color: "#22c55e" }}
+            strokeWidth={2.2}
+          />
+        </div>
+
+        {/* Text */}
+        <div className="flex-1 min-w-0">
+          <p
+            className="text-xs sm:text-sm leading-relaxed overflow-hidden sm:overflow-visible whitespace-nowrap sm:whitespace-pre-wrap text-ellipsis sm:text-clip sm:break-words"
+            style={{ color: "rgba(226,226,232,0.88)" }}
           >
-            {formatTime(entry.time)}
-          </span>
+            {entry.text}
+          </p>
           {entry.claimedBy.length > 0 && (
             <span
-              className="text-xs text-muted-foreground"
+              className="hidden sm:inline-block text-xs text-muted-foreground mt-2"
               style={{ fontFamily: MONO }}
             >
-              · {entry.claimedBy.length} claimed
+              {entry.claimedBy.length} claimed
             </span>
           )}
         </div>
-      </div>
 
-      {/* Claim button */}
-      <div className="flex-shrink-0 ml-2">
-        {isOwn ? (
-          <span
-            className="text-xs px-3 py-1.5 rounded"
-            style={{
-              fontFamily: MONO,
-              color: "#66667a",
-              border: "1px solid rgba(255,255,255,0.07)",
-            }}
-          >
-            yours
-          </span>
-        ) : hasClaimed ? (
-          <span
-            className="text-xs px-3 py-1.5 rounded font-bold"
-            style={{
-              fontFamily: MONO,
-              color: "#22c55e",
-              backgroundColor: "rgba(34,197,94,0.1)",
-              border: "1px solid rgba(34,197,94,0.2)",
-            }}
-          >
-            +1 ✓
-          </span>
-        ) : atMaxHp ? (
-          <span
-            className="text-xs px-3 py-1.5 rounded"
-            style={{
-              fontFamily: MONO,
-              color: "#66667a",
-              border: "1px solid rgba(255,255,255,0.07)",
-            }}
-          >
-            HP Full
-          </span>
-        ) : (
-          <button
-            className="text-xs px-3 py-1.5 rounded font-bold transition-all hover:scale-105 active:scale-95"
-            style={{
-              fontFamily: MONO,
-              color: "#22c55e",
-              backgroundColor: "rgba(34,197,94,0.1)",
-              border: "1px solid rgba(34,197,94,0.25)",
-              boxShadow: "0 0 10px rgba(34,197,94,0.15)",
-            }}
-            onClick={() => onClaim(entry.id)}
-          >
-            + 1 HP
-          </button>
-        )}
+        {/* Claim button */}
+        <div className="flex-shrink-0">
+          {isOwn ? (
+            <span
+              className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded whitespace-nowrap"
+              style={{
+                fontFamily: MONO,
+                color: "#66667a",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+            >
+              yours
+            </span>
+          ) : hasClaimed ? (
+            <span
+              className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded font-bold whitespace-nowrap"
+              style={{
+                fontFamily: MONO,
+                color: "#22c55e",
+                backgroundColor: "rgba(34,197,94,0.1)",
+                border: "1px solid rgba(34,197,94,0.2)",
+              }}
+            >
+              +1 ✓
+            </span>
+          ) : atMaxHp ? (
+            <span
+              className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded whitespace-nowrap"
+              style={{
+                fontFamily: MONO,
+                color: "#66667a",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+            >
+              HP Full
+            </span>
+          ) : (
+            <button
+              className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded font-bold whitespace-nowrap transition-all hover:scale-105 active:scale-95"
+              style={{
+                fontFamily: MONO,
+                color: "#22c55e",
+                backgroundColor: "rgba(34,197,94,0.1)",
+                border: "1px solid rgba(34,197,94,0.25)",
+                boxShadow: "0 0 10px rgba(34,197,94,0.15)",
+              }}
+              onClick={() => onClaim(entry.id)}
+            >
+              + 1 HP
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -398,35 +408,36 @@ function PotionCard({
 
 function TiredCard({ entry }: { entry: ApiBoardEntry }) {
   return (
-    <div
-      className="rounded-lg p-4 flex items-start gap-3 transition-all duration-200"
-      style={{
-        backgroundColor: "rgba(148,163,184,0.04)",
-        border: "1px solid rgba(148,163,184,0.14)",
-      }}
-    >
-      {/* Tired icon */}
-      <Frown
-        size={14}
-        className="flex-shrink-0 mt-1"
-        style={{ color: "#94a3b8" }}
-        strokeWidth={2}
-      />
+    <div className="flex items-center sm:items-start gap-2 sm:gap-4 px-1">
+      {/* Timestamp */}
+      <span
+        className="text-[10px] sm:text-xs text-muted-foreground/60 flex-shrink-0 tabular-nums sm:mt-4"
+        style={{ fontFamily: MONO }}
+      >
+        {formatTime(entry.time)}
+      </span>
 
-      {/* Text */}
-      <div className="flex-1 min-w-0">
+      <div
+        className="flex-1 min-w-0 rounded-lg p-2 sm:p-4 flex items-center sm:items-start gap-2 sm:gap-4 transition-all duration-200"
+        style={{
+          backgroundColor: "rgba(148,163,184,0.04)",
+          border: "1px solid rgba(148,163,184,0.14)",
+        }}
+      >
+        {/* Tired icon */}
+        <Frown
+          className="w-3.5 h-3.5 sm:w-[14px] sm:h-[14px] flex-shrink-0 sm:mt-1"
+          style={{ color: "#94a3b8" }}
+          strokeWidth={2}
+        />
+
+        {/* Text */}
         <p
-          className="text-sm leading-relaxed whitespace-pre-wrap break-words"
+          className="flex-1 min-w-0 text-xs sm:text-sm leading-relaxed overflow-hidden sm:overflow-visible whitespace-nowrap sm:whitespace-pre-wrap text-ellipsis sm:text-clip sm:break-words"
           style={{ color: "rgba(226,226,232,0.75)" }}
         >
           {entry.text}
         </p>
-        <span
-          className="text-xs text-muted-foreground mt-2 inline-block"
-          style={{ fontFamily: MONO }}
-        >
-          {formatTime(entry.time)}
-        </span>
       </div>
     </div>
   );
@@ -477,6 +488,8 @@ export default function App() {
   const nameCheckCacheRef = useRef<{ name: string; exists: boolean } | null>(
     null,
   );
+
+  const [usersExpanded, setUsersExpanded] = useState(true);
 
   const [composerInput, setComposerInput] = useState("");
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
@@ -834,13 +847,13 @@ export default function App() {
       <>
         <style>{scrollbarStyles}</style>
         <div
-          className="min-h-screen bg-background flex items-center justify-center p-8"
+          className="min-h-screen bg-background flex items-center justify-center p-6 sm:p-8"
           style={{ fontFamily: SANS }}
         >
           <div className="w-full max-w-sm">
-            <div className="mb-12">
+            <div className="mb-10 sm:mb-12">
               <h1
-                className="text-8xl font-black tracking-tighter text-foreground leading-none select-none"
+                className="text-6xl sm:text-8xl font-black tracking-tighter text-foreground leading-none select-none"
                 style={{ fontFamily: SANS }}
               >
                 WeHP
@@ -996,22 +1009,22 @@ export default function App() {
         style={{ fontFamily: SANS }}
       >
         {/* Header */}
-        <header className="flex-shrink-0 border-b border-border px-6 lg:px-10 py-4 flex items-center justify-between bg-background/95 backdrop-blur-sm">
+        <header className="flex-shrink-0 border-b border-border px-4 sm:px-6 lg:px-10 py-3 sm:py-4 flex items-center justify-between gap-2 bg-background/95 backdrop-blur-sm">
           <span
-            className="text-base font-black tracking-tighter select-none"
+            className="text-base font-black tracking-tighter select-none flex-shrink-0"
             style={{ fontFamily: SANS }}
           >
             WeHP
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
             <span
-              className="text-sm text-muted-foreground"
+              className="text-sm text-muted-foreground truncate max-w-[80px] sm:max-w-none"
               style={{ fontFamily: MONO }}
             >
               {me.name}
             </span>
             <span
-              className="text-xs px-2.5 py-1 rounded font-medium"
+              className="text-xs px-2 sm:px-2.5 py-1 rounded font-medium whitespace-nowrap"
               style={{
                 fontFamily: MONO,
                 backgroundColor: me.isWorking
@@ -1023,37 +1036,44 @@ export default function App() {
               {me.isWorking ? "● working" : "○ on break"}
             </span>
             <button
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 text-xs px-2 sm:px-2.5 py-1 rounded font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
               style={{ fontFamily: MONO }}
               onClick={handleSignOut}
               title="Sign out"
             >
               <LogOut size={12} strokeWidth={2.2} />
-              sign out
+              <span className="hidden sm:inline">sign out</span>
             </button>
           </div>
         </header>
 
-        <main className="flex-1 min-h-0 max-w-6xl mx-auto px-6 lg:px-10 py-5 w-full overflow-y-auto scroll-thin">
+        <main className="flex-1 min-h-0 max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-4 sm:py-5 w-full overflow-y-auto scroll-thin">
           {/* Page layout: content left, board right */}
-          <div className="flex flex-col lg:flex-row gap-5 h-full min-h-0 max-h-[80vh]">
-            <div className="lg:w-2/3 flex flex-col gap-5 h-full min-h-0">
+          <div className="flex flex-col lg:flex-row gap-5 min-h-0 lg:h-full lg:max-h-[80vh]">
+            <div className="flex flex-col gap-5 min-h-0 lg:h-full lg:w-2/3">
               {/* My HP */}
-              <div className="bg-card border border-border rounded-lg p-4 flex-shrink-0">
-                <p
-                  className="text-xs uppercase tracking-widest text-muted-foreground mb-3"
-                  style={{ fontFamily: MONO }}
-                >
-                  Your HP
-                </p>
+              <div className="bg-card border border-border rounded-lg p-3 flex-shrink-0">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p
+                    className="text-xs uppercase tracking-widest text-muted-foreground"
+                    style={{ fontFamily: MONO }}
+                  >
+                    Your HP
+                  </p>
+                  <span
+                    className="text-xs font-bold tracking-wide"
+                    style={{ color: getHpColor(me.hp), fontFamily: MONO }}
+                  >
+                    {getHpStatus(me.hp)}
+                  </span>
+                </div>
 
-                <div className="flex items-end justify-between mb-3">
-                  <div className="flex items-baseline gap-2">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-baseline gap-1 flex-shrink-0">
                     <span
-                      className="font-black leading-none tabular-nums"
+                      className="font-black leading-none tabular-nums text-3xl sm:text-4xl"
                       style={{
                         fontFamily: MONO,
-                        fontSize: "3rem",
                         color: getHpColor(me.hp),
                         textShadow: `0 0 20px ${getHpColor(me.hp)}60`,
                       }}
@@ -1061,53 +1081,52 @@ export default function App() {
                       {me.hp}
                     </span>
                     <span
-                      className="text-muted-foreground text-sm pb-1"
+                      className="text-muted-foreground text-xs"
                       style={{ fontFamily: MONO }}
                     >
                       /10
                     </span>
                   </div>
-                  <span
-                    className="text-sm font-bold pb-1 tracking-wide"
-                    style={{ color: getHpColor(me.hp), fontFamily: MONO }}
-                  >
-                    {getHpStatus(me.hp)}
-                  </span>
+
+                  <div className="flex gap-2">
+                    <button
+                      className="flex items-center justify-center px-3 py-1.5 rounded border border-border text-xs sm:text-sm font-bold tracking-wide hover:bg-muted transition-colors disabled:opacity-25 disabled:cursor-not-allowed whitespace-nowrap"
+                      style={{ fontFamily: SANS }}
+                      onClick={() => setShowDrainModal(true)}
+                      disabled={!me.isWorking || me.hp <= 0}
+                    >
+                      − 1 HP
+                    </button>
+                    <button
+                      className="px-3 py-1.5 rounded text-xs sm:text-sm font-bold tracking-wide transition-all whitespace-nowrap"
+                      style={{
+                        fontFamily: SANS,
+                        backgroundColor: me.isWorking
+                          ? "rgba(234,179,8,0.1)"
+                          : "rgba(34,197,94,0.1)",
+                        color: me.isWorking ? "#eab308" : "#22c55e",
+                        border: `1px solid ${me.isWorking ? "rgba(234,179,8,0.18)" : "rgba(34,197,94,0.18)"}`,
+                      }}
+                      onClick={handleToggleBreak}
+                    >
+                      <span className="sm:hidden">
+                        {me.isWorking ? "Break" : "Resume"}
+                      </span>
+                      <span className="hidden sm:inline">
+                        {me.isWorking ? "Take Break" : "Resume Work"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
                 <HpSegments hp={me.hp} />
-
-                <div className="flex gap-3 mt-4">
-                  <button
-                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded border border-border text-sm font-bold tracking-wide hover:bg-muted transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
-                    style={{ fontFamily: SANS }}
-                    onClick={() => setShowDrainModal(true)}
-                    disabled={!me.isWorking || me.hp <= 0}
-                  >
-                    <div> − 1 HP</div>
-                  </button>
-                  <button
-                    className="flex-1 py-2 rounded text-sm font-bold tracking-wide transition-all"
-                    style={{
-                      fontFamily: SANS,
-                      backgroundColor: me.isWorking
-                        ? "rgba(234,179,8,0.1)"
-                        : "rgba(34,197,94,0.1)",
-                      color: me.isWorking ? "#eab308" : "#22c55e",
-                      border: `1px solid ${me.isWorking ? "rgba(234,179,8,0.18)" : "rgba(34,197,94,0.18)"}`,
-                    }}
-                    onClick={handleToggleBreak}
-                  >
-                    {me.isWorking ? "Take Break" : "Resume Work"}
-                  </button>
-                </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 flex-shrink-0">
-                <div className="bg-card border border-border rounded-lg p-4 flex flex-col items-center">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 flex-shrink-0">
+                <div className="bg-card border border-border rounded-lg p-2.5 sm:p-4 flex flex-col items-center">
                   <p
-                    className="text-xs uppercase tracking-widest text-muted-foreground mb-3 self-start"
+                    className="text-xs uppercase tracking-widest text-muted-foreground mb-1 sm:mb-3 self-start"
                     style={{ fontFamily: MONO }}
                   >
                     Team Avg
@@ -1118,7 +1137,7 @@ export default function App() {
                       hp={Math.round(avgHp)}
                       off={activeUsers.length === 0}
                     />
-                    <div className="flex flex-wrap justify-center gap-1 mt-3 max-w-[120px]">
+                    <div className="flex flex-wrap justify-center gap-1 mt-1.5 sm:mt-3 max-w-[100px] sm:max-w-[120px]">
                       {dotOrder.map((id, i) => {
                         const user = users.find((u) => u.id === id);
                         if (!user) return null;
@@ -1152,9 +1171,9 @@ export default function App() {
                         );
                       })}
                     </div>
-                    <div className="flex justify-center items-baseline gap-1 mt-3">
+                    <div className="flex justify-center items-baseline gap-1 mt-1.5 sm:mt-3">
                       <span
-                        className="text-xl font-black tabular-nums"
+                        className="text-base sm:text-xl font-black tabular-nums"
                         style={{
                           fontFamily: MONO,
                           color:
@@ -1176,102 +1195,133 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                  <div className="bg-card border border-border rounded-lg p-4">
+                <div className="flex flex-col gap-2 sm:gap-4">
+                  <div className="bg-card border border-border rounded-lg p-2.5 sm:p-4">
                     <p
-                      className="text-xs uppercase tracking-widest text-muted-foreground mb-3"
+                      className="text-xs uppercase tracking-widest text-muted-foreground mb-0.5 sm:mb-3"
                       style={{ fontFamily: MONO }}
                     >
                       Working
                     </p>
-                    <p
-                      className="text-2xl font-black tabular-nums text-foreground"
-                      style={{ fontFamily: MONO }}
-                    >
-                      {activeUsers.length}
-                    </p>
-                    <p
-                      className="text-xs text-muted-foreground mt-1"
-                      style={{ fontFamily: MONO }}
-                    >
-                      active now
-                    </p>
+                    <div className="flex items-baseline gap-1.5">
+                      <span
+                        className="text-lg sm:text-2xl font-black tabular-nums text-foreground"
+                        style={{ fontFamily: MONO }}
+                      >
+                        {activeUsers.length}
+                      </span>
+                      <span
+                        className="text-xs text-muted-foreground ml-auto"
+                        style={{ fontFamily: MONO }}
+                      >
+                        active now
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="bg-card border border-border rounded-lg p-2.5 sm:p-4">
                     <p
-                      className="text-xs uppercase tracking-widest text-muted-foreground mb-3"
+                      className="text-xs uppercase tracking-widest text-muted-foreground mb-0.5 sm:mb-3"
                       style={{ fontFamily: MONO }}
                     >
                       Total
                     </p>
-                    <p
-                      className="text-2xl font-black tabular-nums text-foreground"
-                      style={{ fontFamily: MONO }}
-                    >
-                      {users.length}
-                    </p>
-                    <p
-                      className="text-xs text-muted-foreground mt-1"
-                      style={{ fontFamily: MONO }}
-                    >
-                      in system
-                    </p>
+                    <div className="flex items-baseline gap-1.5">
+                      <span
+                        className="text-lg sm:text-2xl font-black tabular-nums text-foreground"
+                        style={{ fontFamily: MONO }}
+                      >
+                        {users.length}
+                      </span>
+                      <span
+                        className="text-xs text-muted-foreground ml-auto"
+                        style={{ fontFamily: MONO }}
+                      >
+                        in system
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* User list */}
-              <div className="bg-card border border-border rounded-lg p-5 flex flex-col flex-1 min-h-0">
-                <p
-                  className="text-xs uppercase tracking-widest text-muted-foreground mb-4 flex-shrink-0"
-                  style={{ fontFamily: MONO }}
+              <div className="bg-card border border-border rounded-lg p-3 sm:p-5 flex flex-col flex-shrink-0">
+                <button
+                  type="button"
+                  className="flex items-center justify-between w-full flex-shrink-0"
+                  onClick={() => setUsersExpanded((v) => !v)}
                 >
-                  All Users
-                </p>
-                <div className="space-y-3 flex-1 min-h-0 overflow-y-auto scroll-thin pr-1">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center gap-3">
-                      <div
-                        className="w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300"
-                        style={{
-                          backgroundColor: user.isWorking
-                            ? "#22c55e"
-                            : "#eab308",
-                        }}
-                      />
-                      <span
-                        className="text-sm flex-1 truncate min-w-0"
-                        style={{ fontFamily: SANS }}
-                      >
-                        {user.name}
-                        {user.id === me.id && (
+                  <span
+                    className="text-xs uppercase tracking-widest text-muted-foreground"
+                    style={{ fontFamily: MONO }}
+                  >
+                    All Users{" "}
+                    <span className="text-muted-foreground/50">
+                      ({users.length})
+                    </span>
+                  </span>
+                  <ChevronDown
+                    size={14}
+                    className="text-muted-foreground transition-transform duration-200"
+                    style={{
+                      transform: usersExpanded ? "rotate(180deg)" : "none",
+                    }}
+                  />
+                </button>
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                    usersExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  }`}
+                >
+                  <div
+                    className="overflow-hidden min-h-0 transition-opacity duration-200"
+                    style={{ opacity: usersExpanded ? 1 : 0 }}
+                  >
+                    <div className="space-y-3 max-h-56 overflow-y-auto scroll-thin pr-1 mt-4">
+                      {users.map((user) => (
+                        <div key={user.id} className="flex items-center gap-3">
+                          <div
+                            className="w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300"
+                            style={{
+                              backgroundColor: user.isWorking
+                                ? "#22c55e"
+                                : "#eab308",
+                            }}
+                          />
                           <span
-                            className="text-muted-foreground text-xs ml-1.5"
-                            style={{ fontFamily: MONO }}
+                            className="text-sm flex-1 truncate min-w-0"
+                            style={{ fontFamily: SANS }}
                           >
-                            you
+                            {user.name}
+                            {user.id === me.id && (
+                              <span
+                                className="text-muted-foreground text-xs ml-1.5"
+                                style={{ fontFamily: MONO }}
+                              >
+                                you
+                              </span>
+                            )}
                           </span>
-                        )}
-                      </span>
-                      <span
-                        className="text-xs flex-shrink-0"
-                        style={{
-                          fontFamily: MONO,
-                          color: user.isWorking ? "#22c55e" : "#eab308",
-                        }}
-                      >
-                        {user.isWorking ? "working" : "break"}
-                      </span>
+                          <span
+                            className="text-xs flex-shrink-0"
+                            style={{
+                              fontFamily: MONO,
+                              color: user.isWorking ? "#22c55e" : "#eab308",
+                            }}
+                          >
+                            {user.isWorking ? "working" : "break"}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Board */}
-            <div className="lg:w-1/2 min-h-0">
-              <div className="bg-card border border-border rounded-lg p-6 flex flex-col h-full">
+            <div className="min-h-0 h-[42vh] lg:h-full lg:w-1/2">
+              <div className="bg-card border border-border rounded-lg p-4 sm:p-6 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-5 flex-shrink-0">
                   <p
                     className="text-xs uppercase tracking-widest text-muted-foreground"
