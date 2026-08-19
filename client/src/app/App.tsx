@@ -725,6 +725,10 @@ export default function App() {
     setSignInError(null);
     try {
       const { userId: newId } = await api.signIn(name, password);
+      // The account now definitely exists — overwrite any stale "new" cache
+      // entry from before this sign-in/sign-up so a later name check (e.g.
+      // after signing out and typing the same name again) reflects reality.
+      nameCheckCacheRef.current = { name: name.toLowerCase(), exists: true };
       localStorage.setItem(STORAGE_KEY, newId);
       setUserId(newId);
       setNameInput("");
