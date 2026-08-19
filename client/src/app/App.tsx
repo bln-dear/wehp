@@ -34,6 +34,15 @@ function getHpStatus(hp: number): string {
   return "Full";
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], {
     hour: "2-digit",
@@ -497,6 +506,46 @@ export default function App() {
   useEffect(() => {
     if (teamAvgMaxed && sendMode === "potion") setSendMode("message");
   }, [teamAvgMaxed, sendMode]);
+
+  const [dotOrder, setDotOrder] = useState<string[]>([]);
+  const [dotsOff, setDotsOff] = useState(false);
+  const dotSignatureRef = useRef<string>("");
+  const dotsInitializedRef = useRef(false);
+  const dotTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    const signature = users
+      .map((u) => `${u.id}:${u.hp}:${u.isWorking}`)
+      .join("|");
+    if (signature === dotSignatureRef.current) return;
+    dotSignatureRef.current = signature;
+
+    if (!dotsInitializedRef.current) {
+      dotsInitializedRef.current = true;
+      setDotOrder(shuffle(users.map((u) => u.id)));
+      return;
+    }
+
+    // Two near-simultaneous refreshes (the direct API call and the
+    // websocket-triggered one) can both land here for the same underlying
+    // change — clear any timer from the first before scheduling a new one,
+    // rather than relying on effect cleanup (which would fire on every
+    // re-run, including no-op ones above, and strand dotsOff on).
+    if (dotTimerRef.current) clearTimeout(dotTimerRef.current);
+    setDotsOff(true);
+    dotTimerRef.current = setTimeout(() => {
+      setDotOrder(shuffle(users.map((u) => u.id)));
+      setDotsOff(false);
+    }, 250);
+  }, [users]);
+
+  useEffect(() => {
+    return () => {
+      if (dotTimerRef.current) clearTimeout(dotTimerRef.current);
+    };
+  }, []);
 
   const potionReadyAtMs = me?.potionReadyAt
     ? new Date(me.potionReadyAt).getTime()
@@ -1069,7 +1118,41 @@ export default function App() {
                       hp={Math.round(avgHp)}
                       off={activeUsers.length === 0}
                     />
-                    <div className="flex items-baseline gap-1 mt-3">
+                    <div className="flex flex-wrap justify-center gap-1 mt-3 max-w-[120px]">
+                      {dotOrder.map((id, i) => {
+                        const user = users.find((u) => u.id === id);
+                        if (!user) return null;
+                        return (
+                          <div
+                            key={user.id}
+                            title={`${user.name} · ${user.hp}/10`}
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              transition:
+                                "background-color 0.25s, opacity 0.25s, box-shadow 0.25s",
+                              backgroundColor: dotsOff
+                                ? "rgba(255,255,255,0.08)"
+                                : getHpColor(user.hp),
+                              opacity: dotsOff
+                                ? 0.15
+                                : user.isWorking
+                                  ? 1
+                                  : 0.3,
+                              boxShadow:
+                                !dotsOff && user.isWorking
+                                  ? `0 0 4px ${getHpColor(user.hp)}80`
+                                  : "none",
+                              animation:
+                                !dotsOff && user.isWorking
+                                  ? `dot-dance 3s ease-in-out infinite`
+                                  : "none",
+                              animationDelay: `${(i % 5) * 0.12}s`,
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-center items-baseline gap-1 mt-3">
                       <span
                         className="text-xl font-black tabular-nums"
                         style={{
@@ -1467,5 +1550,10 @@ const scrollbarStyles = `
   @keyframes bulb-breathe {
     0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1); }
     50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.08); }
+  }
+
+  @keyframes dot-dance {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-3px) scale(1.15); }
   }
 `;
