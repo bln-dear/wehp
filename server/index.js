@@ -6,6 +6,7 @@ import { createServer } from "http";
 import apiRouter from "./routes/api.js";
 import { attach as attachWebSocket } from "./ws.js";
 import { initBulbSync } from "./store.js";
+import { scheduleMidnightRestart } from "./restart.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
@@ -33,4 +34,5 @@ attachWebSocket(server);
 server.listen(PORT, () => {
   console.log(`WeHP server listening on http://localhost:${PORT}`);
   initBulbSync();
+  scheduleMidnightRestart();
 });
