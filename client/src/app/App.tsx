@@ -514,11 +514,6 @@ export default function App() {
     activeUsers.length > 0
       ? activeUsers.reduce((s, u) => s + u.hp, 0) / activeUsers.length
       : 0;
-  const teamAvgMaxed = Math.round(avgHp) >= 10;
-
-  useEffect(() => {
-    if (teamAvgMaxed && sendMode === "potion") setSendMode("message");
-  }, [teamAvgMaxed, sendMode]);
 
   const [dotOrder, setDotOrder] = useState<string[]>([]);
   const [dotsOff, setDotsOff] = useState(false);
@@ -781,7 +776,7 @@ export default function App() {
   async function handleSend() {
     const text = composerInput.trim();
     if (!userId || !text || sending) return;
-    if (sendMode === "potion" && (teamAvgMaxed || potionOnCooldown)) return;
+    if (sendMode === "potion" && potionOnCooldown) return;
     setActionError(null);
     setSending(true);
     try {
@@ -1447,29 +1442,27 @@ export default function App() {
                       <MessageCircle size={12} strokeWidth={2.5} />
                       Message
                     </button>
-                    {!teamAvgMaxed && (
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold transition-all"
-                        style={{
-                          fontFamily: MONO,
-                          backgroundColor:
-                            sendMode === "potion"
-                              ? "rgba(34,197,94,0.12)"
-                              : "transparent",
-                          color: sendMode === "potion" ? "#22c55e" : "#66667a",
-                        }}
-                        onClick={() => setSendMode("potion")}
-                      >
-                        <FlaskConical size={12} strokeWidth={2.5} />
-                        Potion
-                        {potionOnCooldown && (
-                          <span style={{ color: "#66667a" }}>
-                            · {Math.ceil(potionRemainingMs / 1000)}s
-                          </span>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold transition-all"
+                      style={{
+                        fontFamily: MONO,
+                        backgroundColor:
+                          sendMode === "potion"
+                            ? "rgba(34,197,94,0.12)"
+                            : "transparent",
+                        color: sendMode === "potion" ? "#22c55e" : "#66667a",
+                      }}
+                      onClick={() => setSendMode("potion")}
+                    >
+                      <FlaskConical size={12} strokeWidth={2.5} />
+                      Potion
+                      {potionOnCooldown && (
+                        <span style={{ color: "#66667a" }}>
+                          · {Math.ceil(potionRemainingMs / 1000)}s
+                        </span>
+                      )}
+                    </button>
                   </div>
                   <div className="flex gap-3 items-start">
                     <div className="w-full flex flex-col items-end">
