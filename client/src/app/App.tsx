@@ -1052,45 +1052,114 @@ export default function App() {
           <div className="flex flex-col lg:flex-row gap-5 min-h-0 lg:h-full lg:max-h-[80vh]">
             <div className="flex flex-col gap-5 min-h-0 lg:h-full lg:w-2/3">
               {/* My HP */}
-              <div className="bg-card border border-border rounded-lg p-3 flex-shrink-0">
-                <div className="flex items-center justify-between mb-1.5">
+              <div className="bg-card border border-border rounded-lg p-3 sm:p-4 flex-shrink-0">
+                {/* Mobile: compact, HP number and buttons share a line */}
+                <div className="sm:hidden">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p
+                      className="text-xs uppercase tracking-widest text-muted-foreground"
+                      style={{ fontFamily: MONO }}
+                    >
+                      Your HP
+                    </p>
+                    <span
+                      className="text-xs font-bold tracking-wide"
+                      style={{ color: getHpColor(me.hp), fontFamily: MONO }}
+                    >
+                      {getHpStatus(me.hp)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-baseline gap-1 flex-shrink-0">
+                      <span
+                        className="font-black leading-none tabular-nums text-3xl"
+                        style={{
+                          fontFamily: MONO,
+                          color: getHpColor(me.hp),
+                          textShadow: `0 0 20px ${getHpColor(me.hp)}60`,
+                        }}
+                      >
+                        {me.hp}
+                      </span>
+                      <span
+                        className="text-muted-foreground text-xs"
+                        style={{ fontFamily: MONO }}
+                      >
+                        /10
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        className="flex items-center justify-center px-3 py-1.5 rounded border border-border text-xs font-bold tracking-wide hover:bg-muted transition-colors disabled:opacity-25 disabled:cursor-not-allowed whitespace-nowrap"
+                        style={{ fontFamily: SANS }}
+                        onClick={() => setShowDrainModal(true)}
+                        disabled={!me.isWorking || me.hp <= 0}
+                      >
+                        − 1 HP
+                      </button>
+                      <button
+                        className="px-3 py-1.5 rounded text-xs font-bold tracking-wide transition-all whitespace-nowrap"
+                        style={{
+                          fontFamily: SANS,
+                          backgroundColor: me.isWorking
+                            ? "rgba(234,179,8,0.1)"
+                            : "rgba(34,197,94,0.1)",
+                          color: me.isWorking ? "#eab308" : "#22c55e",
+                          border: `1px solid ${me.isWorking ? "rgba(234,179,8,0.18)" : "rgba(34,197,94,0.18)"}`,
+                        }}
+                        onClick={handleToggleBreak}
+                      >
+                        {me.isWorking ? "Break" : "Resume"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <HpSegments hp={me.hp} />
+                </div>
+
+                {/* Desktop: original larger stacked layout */}
+                <div className="hidden sm:block">
                   <p
-                    className="text-xs uppercase tracking-widest text-muted-foreground"
+                    className="text-xs uppercase tracking-widest text-muted-foreground mb-3"
                     style={{ fontFamily: MONO }}
                   >
                     Your HP
                   </p>
-                  <span
-                    className="text-xs font-bold tracking-wide"
-                    style={{ color: getHpColor(me.hp), fontFamily: MONO }}
-                  >
-                    {getHpStatus(me.hp)}
-                  </span>
-                </div>
 
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <div className="flex items-baseline gap-1 flex-shrink-0">
+                  <div className="flex items-end justify-between mb-3">
+                    <div className="flex items-baseline gap-2">
+                      <span
+                        className="font-black leading-none tabular-nums text-5xl"
+                        style={{
+                          fontFamily: MONO,
+                          color: getHpColor(me.hp),
+                          textShadow: `0 0 20px ${getHpColor(me.hp)}60`,
+                        }}
+                      >
+                        {me.hp}
+                      </span>
+                      <span
+                        className="text-muted-foreground text-sm pb-1"
+                        style={{ fontFamily: MONO }}
+                      >
+                        /10
+                      </span>
+                    </div>
                     <span
-                      className="font-black leading-none tabular-nums text-3xl sm:text-4xl"
-                      style={{
-                        fontFamily: MONO,
-                        color: getHpColor(me.hp),
-                        textShadow: `0 0 20px ${getHpColor(me.hp)}60`,
-                      }}
+                      className="text-sm font-bold pb-1 tracking-wide"
+                      style={{ color: getHpColor(me.hp), fontFamily: MONO }}
                     >
-                      {me.hp}
-                    </span>
-                    <span
-                      className="text-muted-foreground text-xs"
-                      style={{ fontFamily: MONO }}
-                    >
-                      /10
+                      {getHpStatus(me.hp)}
                     </span>
                   </div>
 
-                  <div className="flex gap-2">
+                  <HpSegments hp={me.hp} />
+
+                  <div className="flex gap-3 mt-4">
                     <button
-                      className="flex items-center justify-center px-3 py-1.5 rounded border border-border text-xs sm:text-sm font-bold tracking-wide hover:bg-muted transition-colors disabled:opacity-25 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="flex-1 flex items-center justify-center gap-2 py-2 rounded border border-border text-sm font-bold tracking-wide hover:bg-muted transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
                       style={{ fontFamily: SANS }}
                       onClick={() => setShowDrainModal(true)}
                       disabled={!me.isWorking || me.hp <= 0}
@@ -1098,7 +1167,7 @@ export default function App() {
                       − 1 HP
                     </button>
                     <button
-                      className="px-3 py-1.5 rounded text-xs sm:text-sm font-bold tracking-wide transition-all whitespace-nowrap"
+                      className="flex-1 py-2 rounded text-sm font-bold tracking-wide transition-all"
                       style={{
                         fontFamily: SANS,
                         backgroundColor: me.isWorking
@@ -1109,17 +1178,10 @@ export default function App() {
                       }}
                       onClick={handleToggleBreak}
                     >
-                      <span className="sm:hidden">
-                        {me.isWorking ? "Break" : "Resume"}
-                      </span>
-                      <span className="hidden sm:inline">
-                        {me.isWorking ? "Take Break" : "Resume Work"}
-                      </span>
+                      {me.isWorking ? "Take Break" : "Resume Work"}
                     </button>
                   </div>
                 </div>
-
-                <HpSegments hp={me.hp} />
               </div>
 
               {/* Stats */}
@@ -1245,7 +1307,7 @@ export default function App() {
               </div>
 
               {/* User list */}
-              <div className="bg-card border border-border rounded-lg p-3 sm:p-5 flex flex-col flex-shrink-0">
+              <div className="bg-card border border-border rounded-lg p-3 sm:p-5 flex flex-col min-h-0 flex-shrink-0 lg:flex-1">
                 <button
                   type="button"
                   className="flex items-center justify-between w-full flex-shrink-0"
