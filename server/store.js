@@ -1,5 +1,6 @@
 import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { translateToGenZ } from "./ai.js";
+import { syncBulbToTeamAvg } from "./light.js";
 
 // ─── Error type ─────────────────────────────────────────────────────────────
 
@@ -69,6 +70,19 @@ function findUserByName(name) {
   return Array.from(users.values()).find((u) => u.name.toLowerCase() === name.toLowerCase());
 }
 
+function pushBulbUpdate() {
+  const activeUsers = Array.from(users.values()).filter((u) => u.isWorking);
+  const avgHp =
+    activeUsers.length > 0 ? activeUsers.reduce((s, u) => s + u.hp, 0) / activeUsers.length : 0;
+  syncBulbToTeamAvg(avgHp, activeUsers.length);
+}
+
+// Called once at server startup so the physical bulb reflects reality
+// immediately, rather than waiting for the first HP-changing action.
+export function initBulbSync() {
+  pushBulbUpdate();
+}
+
 function serializeEntry(e) {
   return {
     id: e.id,
@@ -115,6 +129,7 @@ export function createSession(name, password) {
   const id = randomUUID();
   const user = { id, name: clean, hp: 10, isWorking: true, updatedAt: new Date(), passwordHash: hashPassword(pw) };
   users.set(id, user);
+  pushBulbUpdate();
   return serializeUser(user);
 }
 
@@ -148,6 +163,7 @@ export function getDashboard(userId) {
 export function toggleBreak(userId) {
   const user = touchUser(requireUser(userId));
   user.isWorking = !user.isWorking;
+  pushBulbUpdate();
   return serializeUser(user);
 }
 
@@ -163,6 +179,7 @@ export async function drainHp(userId, text) {
 
   user.hp = Math.max(0, user.hp - 1);
   touchUser(user);
+  pushBulbUpdate();
 
   const entry = {
     id: randomUUID(),
@@ -243,6 +260,7 @@ export function claimPotion(userId, entryId) {
   entry.claimedBy.push(userId);
   user.hp = Math.min(10, user.hp + 1);
   touchUser(user);
+  pushBulbUpdate();
 
   return { user: serializeUser(user), entry: serializeEntry(entry) };
 }
