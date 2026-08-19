@@ -1281,7 +1281,7 @@ export default function App() {
                       <textarea
                         ref={composerInputRef}
                         rows={1}
-                        maxLength={100}
+                        maxLength={50}
                         className="w-full flex-1 min-w-0 bg-background border border-border rounded px-4 py-2.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/40 resize-none overflow-y-auto leading-relaxed disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{
                           fontFamily: SANS,
@@ -1309,7 +1309,7 @@ export default function App() {
                         className="text-right text-xs mt-1"
                         style={{ fontFamily: MONO, color: "#66667a" }}
                       >
-                        {composerInput.length}/100
+                        {composerInput.length}/50
                       </p>
                     </div>
                     <button
@@ -1408,7 +1408,7 @@ export default function App() {
               className="w-full bg-background border border-border rounded px-4 py-3 text-sm text-foreground outline-none focus:border-foreground/20 transition-colors resize-none mb-1 placeholder:text-muted-foreground/40"
               style={{ fontFamily: SANS }}
               rows={3}
-              maxLength={100}
+              maxLength={50}
               placeholder="e.g. Back-to-back meetings with no break..."
               value={tiredInput}
               onChange={(e) => setTiredInput(e.target.value)}
@@ -1424,7 +1424,7 @@ export default function App() {
               className="text-right text-xs mb-3"
               style={{ fontFamily: MONO, color: "#66667a" }}
             >
-              {tiredInput.length}/100
+              {tiredInput.length}/50
             </p>
             <div className="flex gap-2">
               <button
