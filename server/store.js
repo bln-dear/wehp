@@ -32,7 +32,7 @@ function verifyPassword(password, stored) {
 
 // ─── Config ──────────────────────────────────────────────────────────────
 
-const POTION_COOLDOWN_MS = (Number(process.env.POTION_COOLDOWN_SECONDS) || 60) * 1000;
+const POTION_COOLDOWN_MS = (Number(process.env.POTION_COOLDOWN_SECONDS)) * 1000;
 
 // ─── In-memory data ─────────────────────────────────────────────────────────
 
